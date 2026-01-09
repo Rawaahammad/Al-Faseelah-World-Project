@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "944579461272",
+    "project_id": "al-faseelah-parent-app",
+    "storage_bucket": "al-faseelah-parent-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:944579461272:android:ea67d9dc41c6d7a0a0d0ed",
+        "android_client_info": {
+          "package_name": "com.alfaseelah.parent_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATMNHl1mQiEnwZfH5xAOseGAfEIghcohw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
