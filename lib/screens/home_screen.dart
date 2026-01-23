@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/child_service.dart';
+import '../models/child_model.dart';
 import 'child_profile_screen.dart';
 import 'connection_screen.dart';
 import 'content_library_screen.dart';
@@ -133,22 +136,60 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomeContent extends StatelessWidget {
+class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
 
   @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  final _authService = AuthService();
+  final _childService = ChildService();
+  
+  UserData? _userData;
+  List<Child> _children = [];
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+  
+  Future<void> _loadData() async {
+    final userData = await _authService.getCurrentUserData();
+    final children = await _childService.getChildren();
+    
+    if (mounted) {
+      setState(() {
+        _userData = userData;
+        _children = children;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(50.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     return SingleChildScrollView(
-      child:  Padding(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // بطاقة الترحيب
             _buildWelcomeCard(context),
             const SizedBox(height: 24),
 
-            // حالة الاتصال
             _buildConnectionStatus(context),
             const SizedBox(height: 24),
 
@@ -229,22 +270,25 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  static Widget _buildWelcomeCard(BuildContext context) {
+  Widget _buildWelcomeCard(BuildContext context) {
+    final childName = _children.isNotEmpty ? _children.first.name : 'طفلك';
+    final userName = _userData?.name ?? 'المستخدم';
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF87CEEB), Color(0xFF90EE90)],
-          begin: Alignment. topLeft,
-          end: Alignment. bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow:  [
+        boxShadow: [
           BoxShadow(
             color: const Color(0xFF87CEEB).withOpacity(0.4),
             blurRadius: 15,
-            offset:  const Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -255,9 +299,9 @@ class HomeContent extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration:  BoxDecoration(
-                  color: Colors.white. withOpacity(0.3),
-                  borderRadius: BorderRadius. circular(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.waving_hand,
@@ -266,22 +310,22 @@ class HomeContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'مرحباً بك!  👋',
-                    style: TextStyle(
+                    'مرحباً $userName!  👋',
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize:  24,
-                      fontWeight: FontWeight. bold,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height:  4),
+                  const SizedBox(height: 4),
                   Text(
-                    'سارة تلعب الآن في منطقة المنزل',
-                    style: TextStyle(
-                      color:  Colors.white,
+                    _children.isNotEmpty ? '${_children.first.name} مستعد للعب!' : 'أضف طفلك للبدء',
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 14,
                     ),
                   ),
@@ -320,7 +364,7 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  static Widget _buildWelcomeStatItem(String value, String label) {
+  Widget _buildWelcomeStatItem(String value, String label) {
     return Column(
       children: [
         Text(
@@ -342,7 +386,7 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  static Widget _buildConnectionStatus(BuildContext context) {
+  Widget _buildConnectionStatus(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -394,7 +438,7 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  static Widget _buildActionCard(
+  Widget _buildActionCard(
       BuildContext context, {
         required IconData icon,
         required String title,
@@ -447,27 +491,46 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  static Widget _buildRecentActivities(BuildContext context) {
-    final activities = [
-      {
-        'icon':  Icons.auto_stories,
-        'title': 'أكملت سارة قصة "الأرنب الصغير"',
-        'time': 'منذ 30 دقيقة',
-        'color': const Color(0xFF87CEEB),
-      },
-      {
-        'icon':  Icons.star,
-        'title': 'حصلت على نجمة في نشاط الألوان',
-        'time': 'منذ ساعة',
-        'color': const Color(0xFFFFB74D),
-      },
-      {
-        'icon': Icons.mosque,
-        'title': 'تعلمت سورة الفاتحة',
-        'time': 'منذ ساعتين',
-        'color': const Color(0xFF90EE90),
-      },
-    ];
+  Widget _buildRecentActivities(BuildContext context) {
+    final List<Map<String, dynamic>> activities = [];
+    
+    if (_children.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'آخر النشاطات',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.history, size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 12),
+                    Text(
+                      'لا توجد نشاطات بعد',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'قم بإضافة طفل وابدأ استخدام التطبيق',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,7 +583,7 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  static Widget _buildTipsSection(BuildContext context) {
+  Widget _buildTipsSection(BuildContext context) {
     return Card(
       child:  Container(
         padding:  const EdgeInsets. all(16),

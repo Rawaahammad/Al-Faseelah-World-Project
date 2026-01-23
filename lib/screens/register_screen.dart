@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,6 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _authService = AuthService();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -33,8 +35,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      if (! _agreeToTerms) {
-        ScaffoldMessenger. of(context).showSnackBar(
+      if (!_agreeToTerms) {
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('يجب الموافقة على الشروط والأحكام'),
             backgroundColor: Colors.red,
@@ -47,14 +49,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _isLoading = true;
       });
 
-      await Future.delayed(const Duration(seconds: 2));
+      final result = await _authService.register(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+      );
 
       setState(() {
         _isLoading = false;
       });
 
-      if (mounted) {
-        _showSuccessDialog();
+      if (result.success) {
+        if (mounted) {
+          _showSuccessDialog();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -82,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'تم إنشاء الحساب بنجاح! ',
+              'تم إنشاء الحساب بنجاح!',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -90,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'مرحباً ${_nameController.text}، يمكنك الآن تسجيل الدخول',
+              'مرحباً ${_nameController.text}، يمكنك الآن استخدام التطبيق',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
             ),
@@ -99,10 +117,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator. pop(context);
-                  Navigator. pushReplacementNamed(context, '/login');
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/home');
                 },
-                child: const Text('تسجيل الدخول'),
+                child: const Text('البدء'),
               ),
             ),
           ],
@@ -118,14 +136,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon:  const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'إنشاء حساب جديد',
           style: TextStyle(color: Colors.black),
         ),
-        centerTitle:  true,
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -135,19 +153,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // مؤشر التقدم
                 _buildProgressIndicator(),
                 const SizedBox(height: 32),
-
-                // محتوى الخطوة الحالية
                 _buildStepContent(),
-                const SizedBox(height:  32),
-
-                // أزرار التنقل
+                const SizedBox(height: 32),
                 _buildNavigationButtons(),
                 const SizedBox(height: 24),
-
-                // رابط تسجيل الدخول
                 _buildLoginLink(),
               ],
             ),
@@ -174,19 +185,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       decoration: BoxDecoration(
                         color: isActive
                             ? Theme.of(context).colorScheme.primary
-                            : Colors. grey[300],
+                            : Colors.grey[300],
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: isCompleted
                             ? const Icon(Icons.check, color: Colors.white, size: 18)
                             : Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            color: isActive ?  Colors.white : Colors.grey[600],
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                                '${index + 1}',
+                                style: TextStyle(
+                                  color: isActive ? Colors.white : Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -194,8 +205,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       index == 0
                           ? 'البيانات'
                           : index == 1
-                          ? 'الأمان'
-                          : 'التأكيد',
+                              ? 'الأمان'
+                              : 'التأكيد',
                       style: TextStyle(
                         fontSize: 12,
                         color: isActive
@@ -243,23 +254,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'البيانات الشخصية',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height:  8),
+        const SizedBox(height: 8),
         Text(
           'أدخل بياناتك الشخصية لإنشاء حسابك',
           style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
-
-        // الاسم
         TextFormField(
           controller: _nameController,
-          textCapitalization: TextCapitalization. words,
+          textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
-            labelText:  'الاسم الكامل',
+            labelText: 'الاسم الكامل',
             hintText: 'أدخل اسمك الكامل',
             prefixIcon: Icon(Icons.person_outlined),
           ),
-          validator:  (value) {
+          validator: (value) {
             if (value == null || value.isEmpty) {
               return 'الرجاء إدخال الاسم';
             }
@@ -270,8 +279,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         ),
         const SizedBox(height: 16),
-
-        // البريد الإلكتروني
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -281,7 +288,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             prefixIcon: Icon(Icons.email_outlined),
           ),
           validator: (value) {
-            if (value == null || value. isEmpty) {
+            if (value == null || value.isEmpty) {
               return 'الرجاء إدخال البريد الإلكتروني';
             }
             if (!value.contains('@') || !value.contains('.')) {
@@ -291,8 +298,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         ),
         const SizedBox(height: 16),
-
-        // رقم الهاتف
         TextFormField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
@@ -308,20 +313,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildSecurityStep() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment. start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'إعدادات الأمان',
-          style: TextStyle(fontSize: 20, fontWeight:  FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
           'أنشئ كلمة مرور قوية لحماية حسابك',
-          style: TextStyle(color: Colors. grey[600]),
+          style: TextStyle(color: Colors.grey[600]),
         ),
-        const SizedBox(height:  24),
-
-        // كلمة المرور
+        const SizedBox(height: 24),
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
@@ -354,19 +357,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         ),
         const SizedBox(height: 12),
-
-        // مؤشر قوة كلمة المرور
         _buildPasswordStrengthIndicator(),
         const SizedBox(height: 16),
-
-        // تأكيد كلمة المرور
         TextFormField(
           controller: _confirmPasswordController,
           obscureText: _obscureConfirmPassword,
           decoration: InputDecoration(
             labelText: 'تأكيد كلمة المرور',
             hintText: '••••••••',
-            prefixIcon: const Icon(Icons. lock_outlined),
+            prefixIcon: const Icon(Icons.lock_outlined),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscureConfirmPassword
@@ -424,7 +423,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children:  [
+          children: [
             Text(
               'قوة كلمة المرور',
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -432,7 +431,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Text(
               strengthText,
               style: TextStyle(
-                fontSize:  12,
+                fontSize: 12,
                 color: strengthColor,
                 fontWeight: FontWeight.bold,
               ),
@@ -455,7 +454,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           runSpacing: 4,
           children: [
             _buildPasswordHint('6 أحرف', password.length >= 6),
-            _buildPasswordHint('حرف كبير', password. contains(RegExp(r'[A-Z]'))),
+            _buildPasswordHint('حرف كبير', password.contains(RegExp(r'[A-Z]'))),
             _buildPasswordHint('رقم', password.contains(RegExp(r'[0-9]'))),
           ],
         ),
@@ -468,16 +467,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          isValid ? Icons. check_circle : Icons.circle_outlined,
+          isValid ? Icons.check_circle : Icons.circle_outlined,
           size: 14,
-          color: isValid ?  Colors.green : Colors.grey,
+          color: isValid ? Colors.green : Colors.grey,
         ),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontSize: 11,
-            color: isValid ?  Colors.green : Colors.grey,
+            color: isValid ? Colors.green : Colors.grey,
           ),
         ),
       ],
@@ -490,46 +489,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         const Text(
           'تأكيد البيانات',
-          style:  TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
           'راجع بياناتك قبل إنشاء الحساب',
-          style:  TextStyle(color: Colors.grey[600]),
+          style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
-
-        // ملخص البيانات
         Card(
           child: Padding(
-            padding:  const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 _buildSummaryItem('الاسم', _nameController.text, Icons.person),
                 const Divider(),
-                _buildSummaryItem('البريد', _emailController.text, Icons. email),
+                _buildSummaryItem('البريد', _emailController.text, Icons.email),
                 if (_phoneController.text.isNotEmpty) ...[
                   const Divider(),
-                  _buildSummaryItem('الهاتف', _phoneController. text, Icons.phone),
+                  _buildSummaryItem('الهاتف', _phoneController.text, Icons.phone),
                 ],
               ],
             ),
           ),
         ),
         const SizedBox(height: 24),
-
-        // الموافقة على الشروط
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               height: 24,
               width: 24,
-              child:  Checkbox(
+              child: Checkbox(
                 value: _agreeToTerms,
-                onChanged:  (value) {
+                onChanged: (value) {
                   setState(() {
-                    _agreeToTerms = value! ;
+                    _agreeToTerms = value!;
                   });
                 },
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -537,12 +532,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child:  Wrap(
+              child: Wrap(
                 children: [
                   const Text('أوافق على '),
                   GestureDetector(
                     onTap: () => _showTermsDialog(),
-                    child:  const Text(
+                    child: const Text(
                       'الشروط والأحكام',
                       style: TextStyle(
                         color: Color(0xFF87CEEB),
@@ -552,7 +547,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const Text(' و'),
                   GestureDetector(
-                    onTap:  () => _showPrivacyDialog(),
+                    onTap: () => _showPrivacyDialog(),
                     child: const Text(
                       'سياسة الخصوصية',
                       style: TextStyle(
@@ -599,37 +594,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child:  const Text('السابق'),
+              child: const Text('السابق'),
             ),
           ),
         if (_currentStep > 0) const SizedBox(width: 16),
         Expanded(
           child: ElevatedButton(
-            onPressed:  _isLoading
+            onPressed: _isLoading
                 ? null
                 : () {
-              if (_currentStep < 2) {
-                if (_formKey.currentState! .validate()) {
-                  setState(() {
-                    _currentStep++;
-                  });
-                }
-              } else {
-                _register();
-              }
-            },
+                    if (_currentStep < 2) {
+                      if (_formKey.currentState!.validate()) {
+                        setState(() {
+                          _currentStep++;
+                        });
+                      }
+                    } else {
+                      _register();
+                    }
+                  },
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: _isLoading
                 ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
                 : Text(_currentStep < 2 ? 'التالي' : 'إنشاء حساب'),
           ),
         ),
@@ -662,13 +657,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       builder: (context) => AlertDialog(
         title: const Text('الشروط والأحكام'),
         content: const SingleChildScrollView(
-          child:  Text(
+          child: Text(
             'شروط وأحكام استخدام تطبيق عالم الفسيلة:\n\n'
-                '1. يجب أن يكون المستخدم ولي أمر الطفل أو وصيه القانوني.\n\n'
-                '2. يتحمل ولي الأمر مسؤولية استخدام التطبيق ومراقبة تفاعل الطفل.\n\n'
-                '3. نحافظ على خصوصية بيانات الأطفال ولا نشاركها مع أطراف ثالثة.\n\n'
-                '4. المحتوى التعليمي مصمم للأطفال من 3-12 سنة.\n\n'
-                '5. يحق لنا تحديث الشروط والأحكام مع إشعار المستخدمين.',
+            '1. يجب أن يكون المستخدم ولي أمر الطفل أو وصيه القانوني.\n\n'
+            '2. يتحمل ولي الأمر مسؤولية استخدام التطبيق ومراقبة تفاعل الطفل.\n\n'
+            '3. نحافظ على خصوصية بيانات الأطفال ولا نشاركها مع أطراف ثالثة.\n\n'
+            '4. المحتوى التعليمي مصمم للأطفال من 3-12 سنة.\n\n'
+            '5. يحق لنا تحديث الشروط والأحكام مع إشعار المستخدمين.',
           ),
         ),
         actions: [
@@ -685,21 +680,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title:  const Text('سياسة الخصوصية'),
+        title: const Text('سياسة الخصوصية'),
         content: const SingleChildScrollView(
           child: Text(
             'سياسة الخصوصية لتطبيق عالم الفسيلة:\n\n'
-                '• نجمع البيانات الضرورية فقط لتقديم الخدمة.\n\n'
-                '• لا نشارك بيانات الأطفال مع أطراف ثالثة.\n\n'
-                '• يمكنك طلب حذف بياناتك في أي وقت.\n\n'
-                '• نستخدم تشفير عالي المستوى لحماية البيانات.\n\n'
-                '• نحتفظ بالبيانات فقط للمدة اللازمة لتقديم الخدمة.',
+            '1. نجمع البيانات الضرورية فقط لتشغيل التطبيق.\n\n'
+            '2. بيانات الأطفال محمية ولا يتم مشاركتها.\n\n'
+            '3. نستخدم التشفير لحماية جميع البيانات.\n\n'
+            '4. يمكنك طلب حذف بياناتك في أي وقت.\n\n'
+            '5. لا نستخدم البيانات لأغراض إعلانية.',
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:  const Text('إغلاق'),
+            child: const Text('إغلاق'),
           ),
         ],
       ),

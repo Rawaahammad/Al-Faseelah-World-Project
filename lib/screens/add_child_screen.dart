@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/child_model.dart';
+import '../services/child_service.dart';
 
 class AddChildScreen extends StatefulWidget {
   const AddChildScreen({super.key});
@@ -10,6 +12,8 @@ class AddChildScreen extends StatefulWidget {
 class _AddChildScreenState extends State<AddChildScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _childService = ChildService();
+  
   int _selectedAge = 5;
   String _selectedGender = 'ذكر';
   String _selectedAvatar = '👦';
@@ -19,17 +23,17 @@ class _AddChildScreenState extends State<AddChildScreen> {
   final List<String> _avatars = ['👦', '👧', '🧒', '👶', '🧒🏻', '👦🏻', '👧🏻'];
 
   final List<Map<String, dynamic>> _allInterests = [
-    {'name': 'القصص', 'icon': Icons. auto_stories},
-    {'name':  'الأرقام', 'icon': Icons. calculate},
-    {'name': 'الحروف', 'icon': Icons. abc},
-    {'name': 'الألوان', 'icon': Icons. palette},
+    {'name': 'القصص', 'icon': Icons.auto_stories},
+    {'name': 'الأرقام', 'icon': Icons.calculate},
+    {'name': 'الحروف', 'icon': Icons.abc},
+    {'name': 'الألوان', 'icon': Icons.palette},
     {'name': 'الحيوانات', 'icon': Icons.pets},
     {'name': 'الطبيعة', 'icon': Icons.park},
     {'name': 'الفضاء', 'icon': Icons.rocket},
     {'name': 'الموسيقى', 'icon': Icons.music_note},
     {'name': 'الرسم', 'icon': Icons.brush},
-    {'name': 'الرياضة', 'icon':  Icons.sports_soccer},
-    {'name': 'العلوم', 'icon':  Icons.science},
+    {'name': 'الرياضة', 'icon': Icons.sports_soccer},
+    {'name': 'العلوم', 'icon': Icons.science},
     {'name': 'الطبخ', 'icon': Icons.restaurant},
   ];
 
@@ -40,7 +44,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
   }
 
   Future<void> _saveChild() async {
-    if (_formKey. currentState!.validate()) {
+    if (_formKey.currentState!.validate()) {
       if (_selectedInterests.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -55,21 +59,39 @@ class _AddChildScreenState extends State<AddChildScreen> {
         _isLoading = true;
       });
 
-      // محاكاة الحفظ
-      await Future.delayed(const Duration(seconds: 1));
+      final newChild = Child(
+        id: '',
+        name: _nameController.text,
+        age: _selectedAge,
+        gender: _selectedGender,
+        avatar: _selectedAvatar,
+        interests: _selectedInterests,
+        createdAt: DateTime.now(),
+      );
+
+      final result = await _childService.addChild(newChild);
 
       setState(() {
         _isLoading = false;
       });
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger. of(context).showSnackBar(
-          SnackBar(
-            content:  Text('تم إضافة ${_nameController.text} بنجاح!  🎉'),
-            backgroundColor: const Color(0xFF90EE90),
-          ),
-        );
+        if (result.success) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم إضافة ${_nameController.text} بنجاح! 🎉'),
+              backgroundColor: const Color(0xFF90EE90),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -87,27 +109,16 @@ class _AddChildScreenState extends State<AddChildScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // اختيار الصورة الرمزية
               _buildAvatarSection(),
               const SizedBox(height: 32),
-
-              // اسم الطفل
               _buildNameSection(),
               const SizedBox(height: 24),
-
-              // العمر
               _buildAgeSection(),
               const SizedBox(height: 24),
-
-              // الجنس
               _buildGenderSection(),
               const SizedBox(height: 24),
-
-              // الاهتمامات
               _buildInterestsSection(),
-              const SizedBox(height:  32),
-
-              // زر الحفظ
+              const SizedBox(height: 32),
               _buildSaveButton(),
               const SizedBox(height: 20),
             ],
@@ -121,11 +132,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return Center(
       child: Column(
         children: [
-          // الصورة المختارة
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary. withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               shape: BoxShape.circle,
               border: Border.all(
                 color: Theme.of(context).colorScheme.primary,
@@ -133,7 +143,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
               ),
             ),
             child: CircleAvatar(
-              radius:  50,
+              radius: 50,
               backgroundColor: Colors.transparent,
               child: Text(
                 _selectedAvatar,
@@ -144,11 +154,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
           const SizedBox(height: 16),
           const Text(
             'اختر صورة رمزية',
-            style:  TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
           ),
           const SizedBox(height: 12),
-
-          // قائمة الصور الرمزية
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -161,19 +169,19 @@ class _AddChildScreenState extends State<AddChildScreen> {
                     _selectedAvatar = avatar;
                   });
                 },
-                child:  AnimatedContainer(
-                  duration:  const Duration(milliseconds: 200),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Theme.of(context).colorScheme.primary. withOpacity(0.2)
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
                         : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                     border: isSelected
                         ? Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    )
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          )
                         : null,
                   ),
                   child: Text(avatar, style: const TextStyle(fontSize: 28)),
@@ -196,7 +204,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
             SizedBox(width: 8),
             Text(
               'اسم الطفل',
-              style: TextStyle(fontWeight: FontWeight. w500, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
             ),
           ],
         ),
@@ -224,10 +232,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Widget _buildAgeSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment. start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Row(
-          children:  [
+          children: [
             Icon(Icons.cake, color: Color(0xFF90EE90), size: 20),
             SizedBox(width: 8),
             Text(
@@ -248,8 +256,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
               const Icon(Icons.cake, color: Color(0xFF90EE90)),
               const SizedBox(width: 12),
               Expanded(
-                child:  Slider(
-                  value: _selectedAge. toDouble(),
+                child: Slider(
+                  value: _selectedAge.toDouble(),
                   min: 2,
                   max: 12,
                   divisions: 10,
@@ -268,11 +276,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   color: const Color(0xFF90EE90),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child:  Text(
+                child: Text(
                   '$_selectedAge',
                   style: const TextStyle(
-                    color: Colors. white,
-                    fontWeight:  FontWeight.bold,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
@@ -283,7 +291,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            'العمر المناسب:  2-12 سنة',
+            'العمر المناسب: 2-12 سنة',
             style: TextStyle(color: Colors.grey[500], fontSize: 12),
           ),
         ),
@@ -297,8 +305,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
       children: [
         const Row(
           children: [
-            Icon(Icons. wc, color: Color(0xFFFFB74D), size: 20),
-            SizedBox(width:  8),
+            Icon(Icons.wc, color: Color(0xFFFFB74D), size: 20),
+            SizedBox(width: 8),
             Text(
               'الجنس',
               style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
@@ -342,9 +350,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ?  color.withOpacity(0.2) : Colors.grey[100],
-          borderRadius: BorderRadius. circular(16),
-          border: isSelected ?  Border.all(color: color, width: 2) : null,
+          color: isSelected ? color.withOpacity(0.2) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: color, width: 2) : null,
         ),
         child: Column(
           children: [
@@ -354,7 +362,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
               gender,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? color : Colors. grey[700],
+                color: isSelected ? color : Colors.grey[700],
               ),
             ),
           ],
@@ -365,11 +373,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   Widget _buildInterestsSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment. start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children:  [
+          children: [
             const Row(
               children: [
                 Icon(Icons.favorite, color: Color(0xFFBA68C8), size: 20),
@@ -392,7 +400,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         const SizedBox(height: 8),
         Text(
           'اختر اهتمامات طفلك لتخصيص المحتوى',
-          style:  TextStyle(color: Colors.grey[500], fontSize: 12),
+          style: TextStyle(color: Colors.grey[500], fontSize: 12),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -426,7 +434,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 });
               },
               selectedColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
               checkmarkColor: Theme.of(context).colorScheme.primary,
             );
           }).toList(),
@@ -439,27 +447,27 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLoading ? null :  _saveChild,
-        style:  ElevatedButton.styleFrom(
+        onPressed: _isLoading ? null : _saveChild,
+        style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
         child: _isLoading
             ? const SizedBox(
-          height: 20,
-          width:  20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        )
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
             : const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.save),
-            SizedBox(width: 8),
-            Text('حفظ', style: TextStyle(fontSize: 18)),
-          ],
-        ),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.save),
+                  SizedBox(width: 8),
+                  Text('حفظ', style: TextStyle(fontSize: 18)),
+                ],
+              ),
       ),
     );
   }

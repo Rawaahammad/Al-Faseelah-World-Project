@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../services/child_service.dart';
+import '../models/child_model.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -9,64 +11,132 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
+  final ChildService _childService = ChildService();
+  List<Child> _children = [];
+  bool _isLoading = true;
   String _selectedPeriod = 'أسبوعي';
-  String _selectedChild = 'سارة';
+  int _selectedChildIndex = 0;
 
   final List<String> _periods = ['يومي', 'أسبوعي', 'شهري', 'فصلي'];
-  final List<String> _children = ['سارة', 'أحمد'];
 
-  final Map<String, dynamic> progressData = {
-    'totalMinutes': 345,
-    'averageDaily': 49,
-    'completedActivities': 23,
-    'earnedStars': 45,
-    'dailyProgress': [
-      {'day': 'السبت', 'minutes': 45, 'activities': 3},
-      {'day': 'الأحد', 'minutes':  60, 'activities': 4},
-      {'day': 'الإثنين', 'minutes': 30, 'activities': 2},
-      {'day': 'الثلاثاء', 'minutes':  55, 'activities': 4},
-      {'day': 'الأربعاء', 'minutes': 40, 'activities': 3},
-      {'day': 'الخميس', 'minutes': 65, 'activities': 5},
-      {'day': 'الجمعة', 'minutes': 50, 'activities':  4},
-    ],
-    'skills': [
-      {'name': 'القراءة', 'progress': 80, 'trend': 'up', 'change': '+5%', 'icon': Icons.menu_book},
-      {'name': 'الحساب', 'progress': 65, 'trend': 'up', 'change': '+3%', 'icon': Icons.calculate},
-      {'name': 'التواصل', 'progress': 70, 'trend': 'stable', 'change': '0%', 'icon': Icons.chat},
-      {'name': 'التركيز', 'progress':  85, 'trend': 'up', 'change': '+8%', 'icon': Icons.psychology},
-      {'name':  'الإبداع', 'progress': 75, 'trend': 'up', 'change': '+2%', 'icon': Icons.brush},
-    ],
-    'achievements': [
-      {'title': 'القارئ الصغير', 'description': 'أكمل 10 قصص', 'icon': Icons.auto_stories, 'date': '15 يناير 2024', 'color': const Color(0xFF87CEEB)},
-      {'title': 'عالم الأرقام', 'description': 'أتقن الأرقام من 1-20', 'icon': Icons. calculate, 'date': '12 يناير 2024', 'color': const Color(0xFF90EE90)},
-      {'title': 'المستكشف', 'description':  'زار جميع مناطق اللعبة', 'icon': Icons.explore, 'date': '10 يناير 2024', 'color': const Color(0xFFFFB74D)},
-      {'title': 'الصديق المتعاون', 'description': 'شارك في 5 أنشطة جماعية', 'icon': Icons.people, 'date': '8 يناير 2024', 'color': const Color(0xFFBA68C8)},
-    ],
-    'recentSessions':  [
-      {'date': 'اليوم', 'duration': '45 دقيقة', 'activities': ['قصة الأرنب', 'تعلم الألوان'], 'mood': 'سعيد', 'focus': 'عالي'},
-      {'date': 'أمس', 'duration': '60 دقيقة', 'activities': ['الأرقام', 'لعبة المزرعة', 'سورة الفاتحة'], 'mood': 'متحمس', 'focus': 'ممتاز'},
-      {'date': 'قبل يومين', 'duration': '35 دقيقة', 'activities': ['قصة النملة', 'الأشكال'], 'mood': 'هادئ', 'focus':  'جيد'},
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadChildren();
+  }
+
+  Future<void> _loadChildren() async {
+    final children = await _childService.getChildren();
+    if (mounted) {
+      setState(() {
+        _children = children;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Map<String, dynamic> _getProgressDataForChild(Child? child) {
+    if (child == null) {
+      return _getEmptyProgressData();
+    }
+    return {
+      'totalMinutes': 0,
+      'averageDaily': 0,
+      'completedActivities': 0,
+      'earnedStars': 0,
+      'dailyProgress': [
+        {'day': 'السبت', 'minutes': 0, 'activities': 0},
+        {'day': 'الأحد', 'minutes': 0, 'activities': 0},
+        {'day': 'الإثنين', 'minutes': 0, 'activities': 0},
+        {'day': 'الثلاثاء', 'minutes': 0, 'activities': 0},
+        {'day': 'الأربعاء', 'minutes': 0, 'activities': 0},
+        {'day': 'الخميس', 'minutes': 0, 'activities': 0},
+        {'day': 'الجمعة', 'minutes': 0, 'activities': 0},
+      ],
+      'skills': [
+        {'name': 'القراءة', 'progress': 0, 'trend': 'stable', 'change': '0%', 'icon': Icons.menu_book},
+        {'name': 'الحساب', 'progress': 0, 'trend': 'stable', 'change': '0%', 'icon': Icons.calculate},
+        {'name': 'التواصل', 'progress': 0, 'trend': 'stable', 'change': '0%', 'icon': Icons.chat},
+        {'name': 'التركيز', 'progress': 0, 'trend': 'stable', 'change': '0%', 'icon': Icons.psychology},
+        {'name': 'الإبداع', 'progress': 0, 'trend': 'stable', 'change': '0%', 'icon': Icons.brush},
+      ],
+      'achievements': <Map<String, dynamic>>[],
+      'recentSessions': <Map<String, dynamic>>[],
+    };
+  }
+
+  Map<String, dynamic> _getEmptyProgressData() {
+    return {
+      'totalMinutes': 0,
+      'averageDaily': 0,
+      'completedActivities': 0,
+      'earnedStars': 0,
+      'dailyProgress': <Map<String, dynamic>>[],
+      'skills': <Map<String, dynamic>>[],
+      'achievements': <Map<String, dynamic>>[],
+      'recentSessions': <Map<String, dynamic>>[],
+    };
+  }
+
+  Child? get _selectedChild {
+    if (_children.isEmpty || _selectedChildIndex >= _children.length) return null;
+    return _children[_selectedChildIndex];
+  }
+
+  Map<String, dynamic> get progressData => _getProgressDataForChild(_selectedChild);
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('تقارير التقدم')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_children.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('تقارير التقدم')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.child_care, size: 80, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('لا يوجد أطفال مسجلين', style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              const Text('قم بإضافة طفل أولاً لعرض التقارير', style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await Navigator.pushNamed(context, '/add-child');
+                  _loadChildren();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('إضافة طفل'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('تقارير التقدم'),
         actions: [
           IconButton(
-            icon: const Icon(Icons. share),
+            icon: const Icon(Icons.share),
             onPressed: () => _showShareOptions(),
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed:  () => _downloadReport(),
+            onPressed: () => _downloadReport(),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        child:  Padding(
+        child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +150,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               _buildSkillsProgress(),
               const SizedBox(height: 24),
               _buildAchievements(),
-              const SizedBox(height:  24),
+              const SizedBox(height: 24),
               _buildRecentSessions(),
               const SizedBox(height: 24),
               _buildAIRecommendations(),
@@ -95,7 +165,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget _buildFilters() {
     return Card(
       child: Padding(
-        padding:  const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
@@ -112,15 +182,24 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedChild,
+                      child: DropdownButton<int>(
+                        value: _selectedChildIndex,
                         isExpanded: true,
-                        items:  _children.map((child) {
-                          return DropdownMenuItem(value: child, child: Text(child));
+                        items: _children.asMap().entries.map((entry) {
+                          return DropdownMenuItem(
+                            value: entry.key,
+                            child: Row(
+                              children: [
+                                Text(entry.value.avatar, style: const TextStyle(fontSize: 20)),
+                                const SizedBox(width: 8),
+                                Text(entry.value.name),
+                              ],
+                            ),
+                          );
                         }).toList(),
                         onChanged: (value) {
                           setState(() {
-                            _selectedChild = value! ;
+                            _selectedChildIndex = value!;
                           });
                         },
                       ),
@@ -133,16 +212,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children:  _periods.map((period) {
+                children: _periods.map((period) {
                   final isSelected = _selectedPeriod == period;
                   return Padding(
-                    padding: const EdgeInsets. only(left: 8),
+                    padding: const EdgeInsets.only(left: 8),
                     child: ChoiceChip(
                       label: Text(period),
-                      selected:  isSelected,
+                      selected: isSelected,
                       selectedColor: Theme.of(context).colorScheme.primary,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors. white : Colors.grey[700],
+                        color: isSelected ? Colors.white : Colors.grey[700],
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       onSelected: (selected) {
@@ -231,13 +310,33 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Widget _buildUsageChart() {
     final dailyProgress = progressData['dailyProgress'] as List;
-    final maxMinutes = dailyProgress. map((d) => d['minutes'] as int).reduce((a, b) => a > b ? a : b);
+
+    if (dailyProgress.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.bar_chart, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 12),
+                Text('لا توجد بيانات استخدام بعد', style: TextStyle(color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final minutes = dailyProgress.map((d) => d['minutes'] as int).toList();
+    final maxMinutes = minutes.reduce((a, b) => a > b ? a : b);
+    final safeMax = maxMinutes > 0 ? maxMinutes : 1;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets. all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:  CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -247,13 +346,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Container(
-                  padding:  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF90EE90).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
-                    mainAxisSize:  MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.trending_up, size: 16, color: Color(0xFF90EE90)),
                       const SizedBox(width: 4),
@@ -277,7 +376,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: dailyProgress.map((day) {
-                  final percentage = (day['minutes'] as int) / maxMinutes;
+                  final percentage = (day['minutes'] as int) / safeMax;
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -331,6 +430,23 @@ class _ProgressScreenState extends State<ProgressScreen> {
       const Color(0xFF4DD0E1),
     ];
 
+    if (skills.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.school, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 12),
+                Text('لا توجد بيانات مهارات بعد', style: TextStyle(color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -339,7 +455,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           children: [
             const Text(
               'تقدم المهارات',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight. bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             ...skills.asMap().entries.map((entry) {
@@ -441,79 +557,113 @@ class _ProgressScreenState extends State<ProgressScreen> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children:  [
+          children: [
             const Text(
               'الإنجازات',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            TextButton(
-              onPressed: () => _showAllAchievements(),
-              child: const Text('عرض الكل'),
-            ),
+            if (achievements.isNotEmpty)
+              TextButton(
+                onPressed: () => _showAllAchievements(),
+                child: const Text('عرض الكل'),
+              ),
           ],
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 140,
-          child: ListView. builder(
-            scrollDirection:  Axis.horizontal,
-            itemCount: achievements.length,
-            itemBuilder: (context, index) {
-              final achievement = achievements[index];
-              return Container(
-                width: 130,
-                margin: const EdgeInsets.only(left: 12),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: (achievement['color'] as Color).withOpacity(0.15),
-                            shape: BoxShape.circle,
+        if (achievements.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.emoji_events, size: 48, color: Colors.grey[400]),
+                    const SizedBox(height: 12),
+                    Text('لا توجد إنجازات بعد', style: TextStyle(color: Colors.grey[600])),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: achievements.length,
+              itemBuilder: (context, index) {
+                final achievement = achievements[index];
+                return Container(
+                  width: 130,
+                  margin: const EdgeInsets.only(left: 12),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: (achievement['color'] as Color).withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              achievement['icon'] as IconData,
+                              color: achievement['color'] as Color,
+                              size: 28,
+                            ),
                           ),
-                          child: Icon(
-                            achievement['icon'] as IconData,
-                            color: achievement['color'] as Color,
-                            size: 28,
+                          const SizedBox(height: 10),
+                          Text(
+                            achievement['title'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          achievement['title'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                          const SizedBox(height: 4),
+                          Text(
+                            achievement['date'],
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors. grey[500],
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          achievement['date'],
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors. grey[500],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildRecentSessions() {
     final sessions = progressData['recentSessions'] as List;
+
+    if (sessions.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.history, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 12),
+                Text('لا توجد جلسات سابقة', style: TextStyle(color: Colors.grey[600])),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Card(
       child: Padding(
@@ -525,7 +675,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               'الجلسات الأخيرة',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height:  16),
+            const SizedBox(height: 16),
             ...sessions.map((session) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),

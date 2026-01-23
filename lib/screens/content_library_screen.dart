@@ -176,11 +176,34 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
       appBar: AppBar(
         title: const Text('مكتبة المحتوى'),
         bottom: TabBar(
-          controller:  _tabController,
+          controller: _tabController,
           indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedLabelStyle: const TextStyle(fontSize: 13),
           tabs: const [
-            Tab(text: 'استكشاف', icon: Icon(Icons.explore)),
-            Tab(text: 'المحفوظات', icon: Icon(Icons.download_done)),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.explore, size: 20),
+                  SizedBox(width: 8),
+                  Text('استكشاف'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.download_done, size: 20),
+                  SizedBox(width: 8),
+                  Text('المحفوظات'),
+                ],
+              ),
+            ),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration:  const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1500),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -26,19 +27,30 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve:  Curves.elasticOut),
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
 
     _controller.forward();
 
-    // الانتقال بعد 3 ثواني
-    // غيّري إلى '/onboarding' للمستخدم الجديد
-    // أو '/login' لشاشة تسجيل الدخول
-    Future. delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator. pushReplacementNamed(context, '/home');
-      }
-    });
+    // التحقق من حالة المستخدم والانتقال للشاشة المناسبة
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    // التحقق من حالة تسجيل الدخول
+    final user = FirebaseAuth.instance.currentUser;
+    
+    if (user != null) {
+      // المستخدم مسجل الدخول - الانتقال للصفحة الرئيسية
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // المستخدم غير مسجل - الانتقال لصفحة تسجيل الدخول
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override
@@ -60,28 +72,25 @@ class _SplashScreenState extends State<SplashScreen>
         ),
         child: Center(
           child: FadeTransition(
-            opacity:  _fadeAnimation,
-            child:  ScaleTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
               scale: _scaleAnimation,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // الشعار
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white. withOpacity(0.2),
+                      color: Colors.white.withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.spa,
                       size: 80,
-                      color: Colors. white,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // اسم التطبيق
                   const Text(
                     'عالم الفسيلة',
                     style: TextStyle(
@@ -91,8 +100,6 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // الشعار النصي
                   const Text(
                     'تعلم • العب • انمُ',
                     style: TextStyle(
@@ -101,8 +108,6 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 48),
-
-                  // مؤشر التحميل
                   const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),

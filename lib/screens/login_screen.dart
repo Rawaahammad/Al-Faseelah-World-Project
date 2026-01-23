@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super. key});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -11,9 +13,44 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
+
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
+
+  static const String _rememberMeKey = 'remember_me';
+  static const String _savedEmailKey = 'saved_email';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberMe = prefs.getBool(_rememberMeKey) ?? false;
+    final savedEmail = prefs.getString(_savedEmailKey) ?? '';
+
+    if (rememberMe && savedEmail.isNotEmpty) {
+      setState(() {
+        _rememberMe = true;
+        _emailController.text = savedEmail;
+      });
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setBool(_rememberMeKey, true);
+      await prefs.setString(_savedEmailKey, _emailController.text);
+    } else {
+      await prefs.setBool(_rememberMeKey, false);
+      await prefs.remove(_savedEmailKey);
+    }
+  }
 
   @override
   void dispose() {
@@ -23,33 +60,47 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (_formKey.currentState! .validate()) {
+    if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // محاكاة تسجيل الدخول
-      await Future.delayed(const Duration(seconds: 2));
+      final result = await _authService.login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
       setState(() {
         _isLoading = false;
       });
 
-      if (mounted) {
-        Navigator. pushReplacementNamed(context, '/home');
+      if (result.success) {
+        await _saveCredentials();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
 
   void _loginWithGoogle() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content:  Text('جاري تسجيل الدخول بـ Google.. .')),
+      const SnackBar(content: Text('تسجيل الدخول بـ Google غير متاح حالياً')),
     );
   }
 
   void _loginWithApple() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('جاري تسجيل الدخول بـ Apple...')),
+      const SnackBar(content: Text('تسجيل الدخول بـ Apple غير متاح حالياً')),
     );
   }
 
@@ -63,28 +114,16 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-
-              // الشعار
               _buildLogo(),
-              const SizedBox(height:  48),
-
-              // عنوان تسجيل الدخول
+              const SizedBox(height: 48),
               _buildTitle(),
               const SizedBox(height: 32),
-
-              // نموذج تسجيل الدخول
               _buildLoginForm(),
               const SizedBox(height: 32),
-
-              // الفاصل
               _buildDivider(),
               const SizedBox(height: 24),
-
-              // تسجيل الدخول بحسابات أخرى
               _buildSocialLogin(),
               const SizedBox(height: 32),
-
-              // إنشاء حساب جديد
               _buildRegisterLink(),
             ],
           ),
@@ -107,8 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF87CEEB).withOpacity(0.3),
-                  blurRadius:  20,
-                  offset:  const Offset(0, 10),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -118,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height:  16),
+          const SizedBox(height: 16),
           const Text(
             'عالم الفسيلة',
             style: TextStyle(
@@ -154,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'أدخل بياناتك للمتابعة',
           style: TextStyle(
-            fontSize:  14,
+            fontSize: 14,
             color: Colors.grey[600],
           ),
         ),
@@ -167,7 +206,6 @@ class _LoginScreenState extends State<LoginScreen> {
       key: _formKey,
       child: Column(
         children: [
-          // البريد الإلكتروني
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -187,9 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-          const SizedBox(height:  16),
-
-          // كلمة المرور
+          const SizedBox(height: 16),
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
@@ -223,17 +259,15 @@ class _LoginScreenState extends State<LoginScreen> {
             },
           ),
           const SizedBox(height: 16),
-
-          // تذكرني ونسيت كلمة المرور
           Row(
-            mainAxisAlignment: MainAxisAlignment. spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   SizedBox(
                     height: 24,
                     width: 24,
-                    child:  Checkbox(
+                    child: Checkbox(
                       value: _rememberMe,
                       onChanged: (value) {
                         setState(() {
@@ -248,35 +282,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               TextButton(
-                onPressed:  () {
+                onPressed: () {
                   Navigator.pushNamed(context, '/forgot-password');
                 },
                 child: const Text('نسيت كلمة المرور؟'),
               ),
             ],
           ),
-          const SizedBox(height:  24),
-
-          // زر تسجيل الدخول
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isLoading ? null :  _login,
+              onPressed: _isLoading ? null : _login,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: _isLoading
                   ? const SizedBox(
-                height:  20,
-                width:  20,
-                child:  CircularProgressIndicator(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
                   : const Text(
                 'تسجيل الدخول',
-                style: TextStyle(fontSize:  16),
+                style: TextStyle(fontSize: 16),
               ),
             ),
           ),
@@ -304,7 +336,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildSocialLogin() {
     return Column(
       children: [
-        // Google
         OutlinedButton(
           onPressed: _loginWithGoogle,
           style: OutlinedButton.styleFrom(
@@ -329,9 +360,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
-        const SizedBox(height:  12),
-
-        // Apple
+        const SizedBox(height: 12),
         OutlinedButton(
           onPressed: _loginWithApple,
           style: OutlinedButton.styleFrom(
@@ -343,10 +372,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           child: const Row(
-            mainAxisAlignment:  MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.apple, size: 24),
-              SizedBox(width:  12),
+              SizedBox(width: 12),
               Text('المتابعة مع Apple'),
             ],
           ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/child_service.dart';
+import '../models/child_model.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -8,6 +11,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final _authService = AuthService();
+  final _childService = ChildService();
+  
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _darkModeEnabled = false;
@@ -15,6 +21,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _analyticsEnabled = true;
   String _selectedLanguage = 'العربية';
   double _dailyTimeLimit = 45;
+  
+  UserData? _userData;
+  List<Child> _children = [];
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+  
+  Future<void> _loadData() async {
+    final userData = await _authService.getCurrentUserData();
+    final children = await _childService.getChildren();
+    
+    if (mounted) {
+      setState(() {
+        _userData = userData;
+        _children = children;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,13 +119,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'أحمد محمد',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    _userData?.name ?? 'المستخدم',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'ahmed@example.com',
+                    _userData?.email ?? '',
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                   const SizedBox(height: 4),
@@ -140,8 +169,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/add-child');
+                  onPressed: () async {
+                    await Navigator.pushNamed(context, '/add-child');
+                    _loadData();
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('إضافة'),
@@ -149,9 +179,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildChildTile('سارة', '5 سنوات', '👧', true),
-            const Divider(),
-            _buildChildTile('أحمد', '7 سنوات', '👦', false),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_children.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('لا يوجد أطفال مسجلون بعد'),
+                ),
+              )
+            else
+              ..._children.asMap().entries.map((entry) {
+                final index = entry.key;
+                final child = entry.value;
+                return Column(
+                  children: [
+                    _buildChildTile(
+                      child.name,
+                      '${child.age} سنوات',
+                      child.avatar,
+                      index == 0,
+                    ),
+                    if (index < _children.length - 1) const Divider(),
+                  ],
+                );
+              }),
           ],
         ),
       ),
@@ -1940,13 +1992,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('إلغاء'),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
-                  );
-                  // يمكنك إضافة التنقل لشاشة تسجيل الدخول هنا
-                  // Navigator.pushReplacementNamed(context, '/login');
+                  await _authService.logout();
+                  if (mounted) {
+                    Navigator.pushReplacementNamed(context, '/login');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: const Text('تسجيل الخروج'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Firebase
 import 'package:firebase_core/firebase_core.dart';
@@ -84,9 +85,13 @@ class AlFaseelahParentApp extends StatelessWidget {
 
   // الثيم الفاتح - الألوان الأصلية
   ThemeData _buildLightTheme() {
+    final textTheme = GoogleFonts.tajawalTextTheme();
+    
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: GoogleFonts.tajawal().fontFamily,
+      textTheme: textTheme,
 
       colorScheme: const ColorScheme.light(
         primary: Color(0xFF87CEEB),

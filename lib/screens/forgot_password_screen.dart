@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -10,6 +11,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _authService = AuthService();
   bool _isLoading = false;
   bool _emailSent = false;
   int _resendCountdown = 0;
@@ -26,20 +28,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _isLoading = true;
       });
 
-      await Future.delayed(const Duration(seconds: 2));
+      final result = await _authService.forgotPassword(_emailController.text);
 
       setState(() {
         _isLoading = false;
-        _emailSent = true;
-        _resendCountdown = 60;
       });
 
-      _startResendCountdown();
+      if (result.success) {
+        setState(() {
+          _emailSent = true;
+          _resendCountdown = 60;
+        });
+        _startResendCountdown();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
   void _startResendCountdown() {
-    Future. doWhile(() async {
+    Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (mounted && _resendCountdown > 0) {
         setState(() {
@@ -56,22 +71,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _isLoading = true;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
+    final result = await _authService.forgotPassword(_emailController.text);
 
     setState(() {
       _isLoading = false;
-      _resendCountdown = 60;
     });
 
-    _startResendCountdown();
+    if (result.success) {
+      setState(() {
+        _resendCountdown = 60;
+      });
+      _startResendCountdown();
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم إعادة إرسال البريد الإلكتروني'),
-          backgroundColor: Color(0xFF90EE90),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم إعادة إرسال البريد الإلكتروني'),
+            backgroundColor: Color(0xFF90EE90),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -79,7 +107,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:  Colors.transparent,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -89,7 +117,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: _emailSent ?  _buildSuccessView() : _buildFormView(),
+          child: _emailSent ? _buildSuccessView() : _buildFormView(),
         ),
       ),
     );
@@ -100,14 +128,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 20),
-
-        // الأيقونة
         Center(
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: const Color(0xFF87CEEB).withOpacity(0.15),
-              shape: BoxShape. circle,
+              shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.lock_reset,
@@ -116,21 +142,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 32),
-
-        // العنوان
         const Text(
           'نسيت كلمة المرور؟',
           style: TextStyle(
-            fontSize:  28,
+            fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height:  12),
+        const SizedBox(height: 12),
         Text(
-          'لا تقلق!  أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة المرور',
+          'لا تقلق! أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة المرور',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -138,10 +161,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-
-        const SizedBox(height:  40),
-
-        // نموذج البريد الإلكتروني
+        const SizedBox(height: 40),
         Form(
           key: _formKey,
           child: Column(
@@ -164,41 +184,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   return null;
                 },
               ),
-
-              const SizedBox(height:  32),
-
-              // زر إرسال
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading ?  null : _resetPassword,
-                  style: ElevatedButton. styleFrom(
+                  onPressed: _isLoading ? null : _resetPassword,
+                  style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    height:  20,
-                    width:  20,
-                    child:  CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                      AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                       : const Text(
-                    'إرسال رابط الاستعادة',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                          'إرسال رابط الاستعادة',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],
           ),
         ),
-
-        const SizedBox(height:  24),
-
-        // العودة لتسجيل الدخول
-        TextButton. icon(
+        const SizedBox(height: 24),
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_forward),
           label: const Text('العودة لتسجيل الدخول'),
@@ -212,8 +226,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 40),
-
-        // أيقونة النجاح
         Center(
           child: Container(
             padding: const EdgeInsets.all(24),
@@ -228,12 +240,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 32),
-
-        // رسالة النجاح
         const Text(
-          'تم إرسال البريد! ',
+          'تم إرسال البريد!',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -242,7 +251,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'تم إرسال رابط استعادة كلمة المرور إلى: ',
+          'تم إرسال رابط استعادة كلمة المرور إلى:',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -259,13 +268,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-
-        const SizedBox(height:  32),
-
-        // تعليمات
+        const SizedBox(height: 32),
         Card(
           child: Padding(
-            padding:  const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 _buildInstructionItem(
@@ -277,7 +283,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 _buildInstructionItem(
                   '2',
                   'اضغط على رابط استعادة كلمة المرور',
-                  Icons. link,
+                  Icons.link,
                 ),
                 const SizedBox(height: 16),
                 _buildInstructionItem(
@@ -289,10 +295,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 24),
-
-        // ملاحظة
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -309,19 +312,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               Expanded(
                 child: Text(
                   'إذا لم تجد البريد، تحقق من مجلد الرسائل غير المرغوب فيها (Spam)',
-                  style:  TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Colors. grey[700],
+                    color: Colors.grey[700],
                   ),
                 ),
               ),
             ],
           ),
         ),
-
-        const SizedBox(height:  32),
-
-        // إعادة الإرسال
+        const SizedBox(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -331,7 +331,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             TextButton(
               onPressed:
-              _resendCountdown > 0 || _isLoading ? null : _resendEmail,
+                  _resendCountdown > 0 || _isLoading ? null : _resendEmail,
               child: Text(
                 _resendCountdown > 0
                     ? 'إعادة الإرسال ($_resendCountdown)'
@@ -340,11 +340,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ],
         ),
-
-        const SizedBox(height:  16),
-
-        // العودة لتسجيل الدخول
-        OutlinedButton. icon(
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
           onPressed: () =>
               Navigator.popUntil(context, (route) => route.isFirst),
           icon: const Icon(Icons.arrow_forward),
@@ -383,9 +380,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Expanded(
           child: Text(
             text,
-            style:  TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors. grey[700],
+              color: Colors.grey[700],
             ),
           ),
         ),
