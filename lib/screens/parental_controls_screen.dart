@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/app_strings.dart';
+
 class ParentalControlsScreen extends StatefulWidget {
   const ParentalControlsScreen({super. key});
 
@@ -15,26 +17,13 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
   TimeOfDay _endTime = const TimeOfDay(hour: 20, minute: 0);
   List<bool> _activeDays = [true, true, true, true, true, true, true];
 
-  // إعدادات المحتوى
-  final Map<String, bool> _contentCategories = {
-    'قصص':  true,
-    'ألعاب تعليمية':  true,
-    'أنشطة': true,
-    'محتوى ديني':  true,
-    'محتوى تربوي': true,
-    'أناشيد': true,
-    'فيديوهات': false,
-  };
+  final Map<String, bool> _contentCategories = Map<String, bool>.fromEntries(
+    AppStrings.parentalInitialContentEntries(),
+  );
 
-  // إعدادات المهارات
-  final Map<String, bool> _skillsFocus = {
-    'القراءة': true,
-    'الكتابة':  true,
-    'الحساب': true,
-    'المهارات الاجتماعية': true,
-    'الإبداع': false,
-    'التركيز':  true,
-  };
+  final Map<String, bool> _skillsFocus = Map<String, bool>.fromEntries(
+    AppStrings.parentalInitialSkillEntries(),
+  );
 
   // إعدادات الأمان
   bool _requirePinForSettings = true;
@@ -43,29 +32,19 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
   bool _allowSoundEffects = true;
   bool _allowBackgroundMusic = true;
 
-  final List<String> _dayNames = ['س', 'أ', 'إ', 'ث', 'أ', 'خ', 'ج'];
-  final List<String> _dayFullNames = [
-    'السبت',
-    'الأحد',
-    'الإثنين',
-    'الثلاثاء',
-    'الأربعاء',
-    'الخميس',
-    'الجمعة'
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الرقابة الأبوية'),
+        title: Text(AppStrings.parentalTitle(context)),
         actions: [
-          TextButton. icon(
+          TextButton.icon(
             onPressed: _saveSettings,
             icon: const Icon(Icons.save, color: Colors.white),
-            label: const Text(
-              'حفظ',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            label: Text(
+              AppStrings.parentalSaveAppBar(context),
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -148,10 +127,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'الحد الزمني اليومي',
-              icon:  Icons.timer,
+              title: AppStrings.parentalDailyLimitTitle(context),
+              icon: Icons.timer,
               color: const Color(0xFF87CEEB),
-              subtitle: 'تحديد وقت الاستخدام اليومي',
+              subtitle: AppStrings.parentalDailyLimitSubtitle(context),
             ),
             const SizedBox(height:  24),
 
@@ -163,7 +142,8 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                   crossAxisAlignment:  CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${_dailyTimeLimit.round()} دقيقة',
+                      AppStrings.minutesCount(
+                          context, _dailyTimeLimit.round()),
                       style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -171,8 +151,11 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                       ),
                     ),
                     Text(
-                      '${(_dailyTimeLimit / 60).toStringAsFixed(1)} ساعة يومياً',
-                      style:  TextStyle(
+                      AppStrings.parentalHoursPerDayLine(
+                        context,
+                        (_dailyTimeLimit / 60).toStringAsFixed(1),
+                      ),
+                      style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 14,
                       ),
@@ -194,7 +177,7 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'مفعّل',
+                        AppStrings.parentalLimitEnabledBadge(context),
                         style: TextStyle(
                           color: Colors.green[700],
                           fontWeight: FontWeight.w500,
@@ -236,10 +219,14 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('15 د', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                  Text('1 س', style: TextStyle(color:  Colors.grey[500], fontSize: 12)),
-                  Text('2 س', style: TextStyle(color:  Colors.grey[500], fontSize: 12)),
-                  Text('3 س', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  Text(AppStrings.parentalSlider15m(context),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  Text(AppStrings.parentalSlider1h(context),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  Text(AppStrings.parentalSlider2h(context),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  Text(AppStrings.parentalSlider3h(context),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                 ],
               ),
             ),
@@ -254,12 +241,12 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               ),
               child:  SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'وقت إضافي في عطلة نهاية الأسبوع',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                title: Text(
+                  AppStrings.parentalWeekendExtraTitle(context),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
-                  '+30 دقيقة يومي الجمعة والسبت',
+                  AppStrings.parentalWeekendExtraSubtitle(context),
                   style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
                 value: _weekendExtraTime,
@@ -285,10 +272,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'جدول الاستخدام',
+              title: AppStrings.parentalScheduleTitle(context),
               icon: Icons.schedule,
               color: const Color(0xFF90EE90),
-              subtitle:  'تحديد أوقات وأيام اللعب',
+              subtitle: AppStrings.parentalScheduleSubtitle(context),
             ),
             const SizedBox(height: 24),
 
@@ -297,10 +284,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               children: [
                 Expanded(
                   child: _buildTimeSelector(
-                    'وقت البدء',
+                    AppStrings.parentalStartTime(context),
                     _startTime,
                     Icons.play_circle_outline,
-                        (time) => setState(() => _startTime = time),
+                    (time) => setState(() => _startTime = time),
                   ),
                 ),
                 const SizedBox(width:  16),
@@ -311,10 +298,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildTimeSelector(
-                    'وقت الانتهاء',
+                    AppStrings.parentalEndTime(context),
                     _endTime,
                     Icons.stop_circle_outlined,
-                        (time) => setState(() => _endTime = time),
+                    (time) => setState(() => _endTime = time),
                   ),
                 ),
               ],
@@ -323,9 +310,9 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
             const SizedBox(height:  24),
 
             // أيام الاستخدام
-            const Text(
-              'أيام الاستخدام المسموحة',
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+            Text(
+              AppStrings.parentalAllowedDays(context),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
             ),
             const SizedBox(height: 12),
             Row(
@@ -337,8 +324,9 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                       _activeDays[index] = !_activeDays[index];
                     });
                   },
-                  child:  Tooltip(
-                    message: _dayFullNames[index],
+                  child: Tooltip(
+                    message:
+                        AppStrings.parentalWeekDayTooltip(context, index),
                     child: AnimatedContainer(
                       duration:  const Duration(milliseconds: 200),
                       width: 42,
@@ -360,7 +348,7 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          _dayNames[index],
+                          AppStrings.parentalWeekDayLetters(context)[index],
                           style: TextStyle(
                             color: _activeDays[index] ? Colors.white : Colors.grey[600],
                             fontWeight: FontWeight.bold,
@@ -376,7 +364,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                '${_activeDays.where((d) => d).length} أيام مفعّلة',
+                AppStrings.parentalDaysEnabledCount(
+                  context,
+                  _activeDays.where((d) => d).length,
+                ),
                 style: TextStyle(color: Colors.grey[500], fontSize: 12),
               ),
             ),
@@ -456,10 +447,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment: CrossAxisAlignment. start,
           children: [
             _buildSectionHeader(
-              title: 'فلترة المحتوى',
+              title: AppStrings.parentalContentFilterTitle(context),
               icon: Icons.filter_list,
               color: const Color(0xFFFFB74D),
-              subtitle: 'اختر أنواع المحتوى المسموح بها',
+              subtitle: AppStrings.parentalContentFilterSubtitle(context),
             ),
             const SizedBox(height: 20),
             Wrap(
@@ -468,7 +459,8 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               children: _contentCategories.entries.map((entry) {
                 return FilterChip(
                   selected: entry.value,
-                  label: Text(entry.key),
+                  label: Text(
+                      AppStrings.parentalContentLabel(context, entry.key)),
                   onSelected: (selected) {
                     setState(() {
                       _contentCategories[entry.key] = selected;
@@ -492,15 +484,15 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                       _contentCategories. updateAll((key, value) => true);
                     });
                   },
-                  child: const Text('تحديد الكل'),
+                  child: Text(AppStrings.parentalSelectAll(context)),
                 ),
                 TextButton(
-                  onPressed:  () {
+                  onPressed: () {
                     setState(() {
-                      _contentCategories. updateAll((key, value) => false);
+                      _contentCategories.updateAll((key, value) => false);
                     });
                   },
-                  child: const Text('إلغاء الكل'),
+                  child: Text(AppStrings.parentalDeselectAll(context)),
                 ),
               ],
             ),
@@ -518,10 +510,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'التركيز على المهارات',
+              title: AppStrings.parentalSkillsTitle(context),
               icon: Icons.psychology,
               color: const Color(0xFFBA68C8),
-              subtitle:  'حدد المهارات التي تريد تطويرها',
+              subtitle: AppStrings.parentalSkillsSubtitle(context),
             ),
             const SizedBox(height: 20),
             ..._skillsFocus.entries.map((entry) {
@@ -536,9 +528,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                 child:  CheckboxListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                   title: Text(
-                    entry.key,
+                    AppStrings.parentalSkillLabel(context, entry.key),
                     style: TextStyle(
-                      fontWeight: entry.value ? FontWeight.w500 : FontWeight.normal,
+                      fontWeight:
+                          entry.value ? FontWeight.w500 : FontWeight.normal,
                     ),
                   ),
                   value: entry.value,
@@ -568,17 +561,17 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment:  CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'الأمان',
+              title: AppStrings.parentalSecurityTitle(context),
               icon: Icons.security,
               color: Colors.red,
-              subtitle: 'إعدادات الحماية والأمان',
+              subtitle: AppStrings.parentalSecuritySubtitle(context),
             ),
             const SizedBox(height:  20),
 
             // رمز PIN للإعدادات
             _buildSecuritySwitch(
-              title: 'رمز PIN للإعدادات',
-              subtitle: 'طلب رمز PIN للدخول للإعدادات',
+              title: AppStrings.parentalPinSettingsTitle(context),
+              subtitle: AppStrings.parentalPinSettingsSubtitle(context),
               value: _requirePinForSettings,
               icon: Icons.lock,
               onChanged: (value) {
@@ -591,8 +584,8 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
 
             // رمز PIN للمشتريات
             _buildSecuritySwitch(
-              title: 'رمز PIN للمشتريات',
-              subtitle: 'طلب رمز PIN لأي عملية شراء',
+              title: AppStrings.parentalPinPurchasesTitle(context),
+              subtitle: AppStrings.parentalPinPurchasesSubtitle(context),
               value: _requirePinForPurchases,
               icon: Icons. shopping_cart,
               onChanged: (value) {
@@ -614,8 +607,8 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
                 ),
                 child: const Icon(Icons. pin, color: Colors.red),
               ),
-              title: const Text('تغيير رمز PIN'),
-              subtitle: const Text('تحديث رمز الحماية'),
+              title: Text(AppStrings.parentalChangePinTitle(context)),
+              subtitle: Text(AppStrings.parentalChangePinSubtitle(context)),
               trailing: const Icon(Icons.chevron_left),
               onTap: () => _showChangePinDialog(),
             ),
@@ -663,16 +656,18 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment:  CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'الإشعارات',
+              title: AppStrings.parentalNotificationsSectionTitle(context),
               icon: Icons.notifications,
               color: const Color(0xFF4DD0E1),
-              subtitle:  'التحكم في إشعارات التطبيق',
+              subtitle:
+                  AppStrings.parentalNotificationsSectionSubtitle(context),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets. zero,
-              title: const Text('السماح بالإشعارات'),
-              subtitle: const Text('إرسال إشعارات عن نشاط الطفل'),
+              title: Text(AppStrings.parentalAllowNotificationsTitle(context)),
+              subtitle:
+                  Text(AppStrings.parentalAllowNotificationsSubtitle(context)),
               value: _allowNotifications,
               activeColor: const Color(0xFF4DD0E1),
               onChanged: (value) {
@@ -695,16 +690,16 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment:  CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'الصوت',
+              title: AppStrings.parentalSoundTitle(context),
               icon: Icons.volume_up,
               color: const Color(0xFF9575CD),
-              subtitle: 'إعدادات الأصوات والموسيقى',
+              subtitle: AppStrings.parentalSoundSubtitle(context),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets. zero,
-              title: const Text('المؤثرات الصوتية'),
-              subtitle: const Text('أصوات التفاعل واللعب'),
+              title: Text(AppStrings.parentalSoundEffectsTitle(context)),
+              subtitle: Text(AppStrings.parentalSoundEffectsSubtitle(context)),
               value:  _allowSoundEffects,
               activeColor:  const Color(0xFF9575CD),
               onChanged: (value) {
@@ -716,8 +711,8 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
             const Divider(),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('الموسيقى الخلفية'),
-              subtitle: const Text('موسيقى هادئة أثناء اللعب'),
+              title: Text(AppStrings.parentalBgMusicTitle(context)),
+              subtitle: Text(AppStrings.parentalBgMusicSubtitle(context)),
               value: _allowBackgroundMusic,
               activeColor: const Color(0xFF9575CD),
               onChanged: (value) {
@@ -741,10 +736,10 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              title: 'إعادة الضبط',
+              title: AppStrings.parentalResetTitle(context),
               icon: Icons.restore,
               color: Colors.red,
-              subtitle: 'استعادة الإعدادات الافتراضية',
+              subtitle: AppStrings.parentalResetSubtitle(context),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -752,9 +747,9 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               child: OutlinedButton. icon(
                 onPressed: _showResetConfirmDialog,
                 icon: const Icon(Icons.restore, color: Colors.red),
-                label: const Text(
-                  'إعادة ضبط جميع الإعدادات',
-                  style: TextStyle(color: Colors.red),
+                label: Text(
+                  AppStrings.parentalResetButton(context),
+                  style: const TextStyle(color: Colors.red),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors. red),
@@ -775,13 +770,13 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
 
     showDialog(
       context: context,
-      builder:  (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.lock, color: Color(0xFF87CEEB)),
-            SizedBox(width: 8),
-            Text('تغيير رمز PIN'),
+            const Icon(Icons.lock, color: Color(0xFF87CEEB)),
+            const SizedBox(width: 8),
+            Text(AppStrings.parentalPinDialogTitle(dialogContext)),
           ],
         ),
         content: Column(
@@ -792,22 +787,22 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               obscureText: true,
               maxLength: 4,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'الرمز الحالي',
+              decoration: InputDecoration(
+                labelText: AppStrings.parentalPinCurrentLabel(dialogContext),
                 counterText: '',
-                prefixIcon: Icon(Icons.lock_outline),
+                prefixIcon: const Icon(Icons.lock_outline),
               ),
             ),
-            const SizedBox(height:  16),
+            const SizedBox(height: 16),
             TextField(
               controller: newPinController,
               obscureText: true,
               maxLength: 4,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'الرمز الجديد',
+              decoration: InputDecoration(
+                labelText: AppStrings.parentalPinNewLabel(dialogContext),
                 counterText: '',
-                prefixIcon: Icon(Icons.lock),
+                prefixIcon: const Icon(Icons.lock),
               ),
             ),
             const SizedBox(height: 16),
@@ -816,40 +811,40 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
               obscureText: true,
               maxLength: 4,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'تأكيد الرمز الجديد',
+              decoration: InputDecoration(
+                labelText: AppStrings.parentalPinConfirmLabel(dialogContext),
                 counterText: '',
-                prefixIcon:  Icon(Icons.lock),
+                prefixIcon: const Icon(Icons.lock),
               ),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppStrings.cancel(dialogContext)),
           ),
           ElevatedButton(
             onPressed: () {
               if (newPinController.text == confirmPinController.text &&
                   newPinController.text.length == 4) {
-                Navigator. pop(context);
+                Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم تغيير رمز PIN بنجاح'),
-                    backgroundColor: Color(0xFF90EE90),
+                  SnackBar(
+                    content: Text(AppStrings.parentalPinChangedOk(context)),
+                    backgroundColor: const Color(0xFF90EE90),
                   ),
                 );
               } else {
-                ScaffoldMessenger. of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('الرمز غير متطابق أو غير صحيح'),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.parentalPinMismatch(context)),
                     backgroundColor: Colors.red,
                   ),
                 );
               }
             },
-            child: const Text('حفظ'),
+            child: Text(AppStrings.save(dialogContext)),
           ),
         ],
       ),
@@ -858,36 +853,34 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
 
   void _showResetConfirmDialog() {
     showDialog(
-      context:  context,
-      builder: (context) => AlertDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children:  [
-            Icon(Icons.warning_amber_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('تأكيد إعادة الضبط'),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(AppStrings.parentalResetConfirmTitle(dialogContext)),
           ],
         ),
-        content: const Text(
-          'هل أنت متأكد من إعادة ضبط جميع إعدادات الرقابة الأبوية إلى الإعدادات الافتراضية؟\n\nهذا الإجراء لا يمكن التراجع عنه.',
-        ),
+        content: Text(AppStrings.parentalResetConfirmBody(dialogContext)),
         actions: [
           TextButton(
-            onPressed:  () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppStrings.cancel(dialogContext)),
           ),
           ElevatedButton(
             onPressed: () {
               _resetToDefaults();
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم إعادة ضبط الإعدادات'),
+                SnackBar(
+                  content: Text(AppStrings.parentalResetDone(context)),
                 ),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('إعادة الضبط'),
+            child: Text(AppStrings.parentalResetAction(dialogContext)),
           ),
         ],
       ),
@@ -901,8 +894,13 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
       _startTime = const TimeOfDay(hour: 8, minute: 0);
       _endTime = const TimeOfDay(hour: 20, minute: 0);
       _activeDays = [true, true, true, true, true, true, true];
-      _contentCategories. updateAll((key, value) => true);
-      _skillsFocus. updateAll((key, value) => true);
+      _contentCategories
+        ..clear()
+        ..addAll(
+            Map.fromEntries(AppStrings.parentalInitialContentEntries()));
+      _skillsFocus
+        ..clear()
+        ..addAll(Map.fromEntries(AppStrings.parentalInitialSkillEntries()));
       _requirePinForSettings = true;
       _requirePinForPurchases = true;
       _allowNotifications = true;
@@ -912,17 +910,16 @@ class _ParentalControlsScreenState extends State<ParentalControlsScreen> {
   }
 
   void _saveSettings() {
-    // حفظ الإعدادات
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('تم حفظ إعدادات الرقابة الأبوية بنجاح'),
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(AppStrings.parentalSavedOk(context)),
           ],
         ),
-        backgroundColor: Color(0xFF90EE90),
+        backgroundColor: const Color(0xFF90EE90),
       ),
     );
     Navigator.pop(context);

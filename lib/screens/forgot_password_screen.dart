@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../utils/app_strings.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -85,9 +86,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم إعادة إرسال البريد الإلكتروني'),
-            backgroundColor: Color(0xFF90EE90),
+          SnackBar(
+            content: Text(AppStrings.emailResentSnack(context)),
+            backgroundColor: const Color(0xFF90EE90),
           ),
         );
       }
@@ -143,9 +144,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 32),
-        const Text(
-          'نسيت كلمة المرور؟',
-          style: TextStyle(
+        Text(
+          AppStrings.forgotPasswordTitle(context),
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
@@ -153,7 +154,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          'لا تقلق! أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة المرور',
+          AppStrings.forgotPasswordDescription(context),
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -169,17 +170,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'البريد الإلكتروني',
-                  hintText: 'example@email.com',
-                  prefixIcon: Icon(Icons.email_outlined),
+                decoration: InputDecoration(
+                  labelText: AppStrings.emailLabel(context),
+                  hintText: AppStrings.emailHintSample(context),
+                  prefixIcon: const Icon(Icons.email_outlined),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال البريد الإلكتروني';
+                    return AppStrings.validationEmailRequired(context);
                   }
                   if (!value.contains('@') || !value.contains('.')) {
-                    return 'الرجاء إدخال بريد إلكتروني صحيح';
+                    return AppStrings.validationEmailInvalid(context);
                   }
                   return null;
                 },
@@ -202,9 +203,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
-                          'إرسال رابط الاستعادة',
-                          style: TextStyle(fontSize: 16),
+                      : Text(
+                          AppStrings.sendResetLink(context),
+                          style: const TextStyle(fontSize: 16),
                         ),
                 ),
               ),
@@ -215,7 +216,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         TextButton.icon(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_forward),
-          label: const Text('العودة لتسجيل الدخول'),
+          label: Text(AppStrings.backToLogin(context)),
         ),
       ],
     );
@@ -241,9 +242,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 32),
-        const Text(
-          'تم إرسال البريد!',
-          style: TextStyle(
+        Text(
+          AppStrings.emailSentTitle(context),
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
@@ -251,7 +252,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'تم إرسال رابط استعادة كلمة المرور إلى:',
+          AppStrings.emailSentSubtitle(context),
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -276,19 +277,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               children: [
                 _buildInstructionItem(
                   '1',
-                  'تحقق من صندوق الوارد في بريدك الإلكتروني',
+                  AppStrings.forgotStepCheckInbox(context),
                   Icons.inbox,
                 ),
                 const SizedBox(height: 16),
                 _buildInstructionItem(
                   '2',
-                  'اضغط على رابط استعادة كلمة المرور',
+                  AppStrings.forgotStepClickLink(context),
                   Icons.link,
                 ),
                 const SizedBox(height: 16),
                 _buildInstructionItem(
                   '3',
-                  'أدخل كلمة المرور الجديدة',
+                  AppStrings.forgotStepNewPassword(context),
                   Icons.lock_open,
                 ),
               ],
@@ -311,7 +312,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'إذا لم تجد البريد، تحقق من مجلد الرسائل غير المرغوب فيها (Spam)',
+                  AppStrings.forgotSpamHint(context),
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey[700],
@@ -326,7 +327,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'لم يصلك البريد؟',
+              AppStrings.emailNotReceived(context),
               style: TextStyle(color: Colors.grey[600]),
             ),
             TextButton(
@@ -334,8 +335,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   _resendCountdown > 0 || _isLoading ? null : _resendEmail,
               child: Text(
                 _resendCountdown > 0
-                    ? 'إعادة الإرسال ($_resendCountdown)'
-                    : 'إعادة الإرسال',
+                    ? AppStrings.resendWithSeconds(context, _resendCountdown)
+                    : AppStrings.resend(context),
               ),
             ),
           ],
@@ -345,7 +346,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onPressed: () =>
               Navigator.popUntil(context, (route) => route.isFirst),
           icon: const Icon(Icons.arrow_forward),
-          label: const Text('العودة لتسجيل الدخول'),
+          label: Text(AppStrings.backToLogin(context)),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),

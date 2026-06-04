@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../utils/app_strings.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
-
+  
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
@@ -32,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final prefs = await SharedPreferences.getInstance();
     final rememberMe = prefs.getBool(_rememberMeKey) ?? false;
     final savedEmail = prefs.getString(_savedEmailKey) ?? '';
-
+    
     if (rememberMe && savedEmail.isNotEmpty) {
       setState(() {
         _rememberMe = true;
@@ -94,13 +95,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _loginWithGoogle() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تسجيل الدخول بـ Google غير متاح حالياً')),
+      SnackBar(content: Text(AppStrings.googleLoginUnavailable(context))),
     );
   }
 
   void _loginWithApple() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تسجيل الدخول بـ Apple غير متاح حالياً')),
+      SnackBar(content: Text(AppStrings.appleLoginUnavailable(context))),
     );
   }
 
@@ -137,12 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            width: 150,
+            height: 150,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF87CEEB), Color(0xFF90EE90)],
-              ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF87CEEB).withOpacity(0.3),
@@ -151,23 +150,36 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.spa,
-              size: 50,
-              color: Colors.white,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF87CEEB), Color(0xFF90EE90)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(Icons.spa, size: 50, color: Colors.white),
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'عالم الفسيلة',
-            style: TextStyle(
+          Text(
+            AppStrings.appTitle(context),
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'تطبيق الأهل',
+            AppStrings.loginParentAppSubtitle(context),
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -182,16 +194,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'تسجيل الدخول',
-          style: TextStyle(
+        Text(
+          AppStrings.loginTitle(context),
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'أدخل بياناتك للمتابعة',
+          AppStrings.loginSubtitle(context),
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -210,17 +222,17 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'البريد الإلكتروني',
-              hintText: 'example@email.com',
-              prefixIcon: Icon(Icons.email_outlined),
+            decoration: InputDecoration(
+              labelText: AppStrings.emailLabel(context),
+              hintText: AppStrings.emailHintSample(context),
+              prefixIcon: const Icon(Icons.email_outlined),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'الرجاء إدخال البريد الإلكتروني';
+                return AppStrings.validationEmailRequired(context);
               }
               if (!value.contains('@') || !value.contains('.')) {
-                return 'الرجاء إدخال بريد إلكتروني صحيح';
+                return AppStrings.validationEmailInvalid(context);
               }
               return null;
             },
@@ -232,8 +244,8 @@ class _LoginScreenState extends State<LoginScreen> {
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _login(),
             decoration: InputDecoration(
-              labelText: 'كلمة المرور',
-              hintText: '••••••••',
+              labelText: AppStrings.passwordLabel(context),
+              hintText: AppStrings.passwordHintDots(context),
               prefixIcon: const Icon(Icons.lock_outlined),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -250,10 +262,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'الرجاء إدخال كلمة المرور';
+                return AppStrings.validationPasswordRequired(context);
               }
               if (value.length < 6) {
-                return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                return AppStrings.validationPasswordMinLength(context);
               }
               return null;
             },
@@ -278,14 +290,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text('تذكرني'),
+                  Text(AppStrings.rememberMe(context)),
                 ],
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, '/forgot-password');
                 },
-                child: const Text('نسيت كلمة المرور؟'),
+                child: Text(AppStrings.forgotPasswordLink(context)),
               ),
             ],
           ),
@@ -299,17 +311,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: _isLoading
                   ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-                  : const Text(
-                'تسجيل الدخول',
-                style: TextStyle(fontSize: 16),
-              ),
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      AppStrings.loginButton(context),
+                      style: const TextStyle(fontSize: 16),
+                    ),
             ),
           ),
         ],
@@ -324,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'أو',
+            AppStrings.orDivider(context),
             style: TextStyle(color: Colors.grey[500]),
           ),
         ),
@@ -356,7 +368,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Icon(Icons.g_mobiledata, size: 24, color: Colors.red),
               ),
               const SizedBox(width: 12),
-              const Text('المتابعة مع Google'),
+              Text(AppStrings.continueWithGoogle(context)),
             ],
           ),
         ),
@@ -371,12 +383,12 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.apple, size: 24),
-              SizedBox(width: 12),
-              Text('المتابعة مع Apple'),
+              const Icon(Icons.apple, size: 24),
+              const SizedBox(width: 12),
+              Text(AppStrings.continueWithApple(context)),
             ],
           ),
         ),
@@ -389,16 +401,16 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'ليس لديك حساب؟',
+          AppStrings.noAccountPrompt(context),
           style: TextStyle(color: Colors.grey[600]),
         ),
         TextButton(
           onPressed: () {
             Navigator.pushNamed(context, '/register');
           },
-          child: const Text(
-            'إنشاء حساب',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          child: Text(
+            AppStrings.createAccountLink(context),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
       ],

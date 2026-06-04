@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/child_model.dart';
 import '../services/child_service.dart';
+import '../utils/app_strings.dart';
 
 class AddChildScreen extends StatefulWidget {
   const AddChildScreen({super.key});
@@ -13,7 +14,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _childService = ChildService();
-  
+
   int _selectedAge = 5;
   String _selectedGender = 'ذكر';
   String _selectedAvatar = '👦';
@@ -47,8 +48,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
     if (_formKey.currentState!.validate()) {
       if (_selectedInterests.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('الرجاء اختيار اهتمام واحد على الأقل'),
+          SnackBar(
+            content: Text(AppStrings.validationPickOneInterest(context)),
             backgroundColor: Colors.orange,
           ),
         );
@@ -80,7 +81,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('تم إضافة ${_nameController.text} بنجاح! 🎉'),
+              content: Text(AppStrings.childAddedSuccess(
+                  context, _nameController.text)),
               backgroundColor: const Color(0xFF90EE90),
             ),
           );
@@ -100,7 +102,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إضافة طفل جديد'),
+        title: Text(AppStrings.addChildAppBar(context)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -152,9 +154,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'اختر صورة رمزية',
-            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+          Text(
+            AppStrings.selectAvatarTitle(context),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -179,9 +181,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: isSelected
                         ? Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 2,
-                          )
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 2,
+                    )
                         : null,
                   ),
                   child: Text(avatar, style: const TextStyle(fontSize: 28)),
@@ -198,13 +200,13 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.person, color: Color(0xFF87CEEB), size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.person, color: Color(0xFF87CEEB), size: 20),
+            const SizedBox(width: 8),
             Text(
-              'اسم الطفل',
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+              AppStrings.childNameFieldTitle(context),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
             ),
           ],
         ),
@@ -212,16 +214,16 @@ class _AddChildScreenState extends State<AddChildScreen> {
         TextFormField(
           controller: _nameController,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'أدخل اسم الطفل',
-            prefixIcon: Icon(Icons.child_care),
+          decoration: InputDecoration(
+            hintText: AppStrings.childNameHint(context),
+            prefixIcon: const Icon(Icons.child_care),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'الرجاء إدخال اسم الطفل';
+              return AppStrings.validationChildNameRequired(context);
             }
             if (value.length < 2) {
-              return 'الاسم يجب أن يكون حرفين على الأقل';
+              return AppStrings.validationChildNameMin(context);
             }
             return null;
           },
@@ -234,13 +236,13 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.cake, color: Color(0xFF90EE90), size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.cake, color: Color(0xFF90EE90), size: 20),
+            const SizedBox(width: 8),
             Text(
-              'العمر',
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+              AppStrings.ageSectionTitle(context),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
             ),
           ],
         ),
@@ -258,10 +260,10 @@ class _AddChildScreenState extends State<AddChildScreen> {
               Expanded(
                 child: Slider(
                   value: _selectedAge.toDouble(),
-                  min: 2,
-                  max: 12,
-                  divisions: 10,
-                  label: '$_selectedAge سنوات',
+                  min: 3,
+                  max: 9,
+                  divisions: 6,
+                  label: AppStrings.yearsOldShort(context, _selectedAge),
                   activeColor: const Color(0xFF90EE90),
                   onChanged: (value) {
                     setState(() {
@@ -291,7 +293,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         const SizedBox(height: 8),
         Center(
           child: Text(
-            'العمر المناسب: 2-12 سنة',
+            AppStrings.ageRangeHint(context),
             style: TextStyle(color: Colors.grey[500], fontSize: 12),
           ),
         ),
@@ -303,13 +305,13 @@ class _AddChildScreenState extends State<AddChildScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.wc, color: Color(0xFFFFB74D), size: 20),
-            SizedBox(width: 8),
+            const Icon(Icons.wc, color: Color(0xFFFFB74D), size: 20),
+            const SizedBox(width: 8),
             Text(
-              'الجنس',
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+              AppStrings.genderSectionTitle(context),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
             ),
           ],
         ),
@@ -318,6 +320,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
           children: [
             Expanded(
               child: _buildGenderOption(
+                context,
+                AppStrings.genderMale(context),
                 'ذكر',
                 '👦',
                 const Color(0xFF87CEEB),
@@ -326,6 +330,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: _buildGenderOption(
+                context,
+                AppStrings.genderFemale(context),
                 'أنثى',
                 '👧',
                 const Color(0xFFFF9ECE),
@@ -337,12 +343,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
     );
   }
 
-  Widget _buildGenderOption(String gender, String emoji, Color color) {
-    final isSelected = _selectedGender == gender;
+  Widget _buildGenderOption(
+    BuildContext context,
+    String label,
+    String genderValue,
+    String emoji,
+    Color color,
+  ) {
+    final isSelected = _selectedGender == genderValue;
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedGender = gender;
+          _selectedGender = genderValue;
           _selectedAvatar = emoji;
         });
       },
@@ -359,7 +371,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
             Text(emoji, style: const TextStyle(fontSize: 40)),
             const SizedBox(height: 8),
             Text(
-              gender,
+              label,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? color : Colors.grey[700],
@@ -378,18 +390,19 @@ class _AddChildScreenState extends State<AddChildScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.favorite, color: Color(0xFFBA68C8), size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.favorite, color: Color(0xFFBA68C8), size: 20),
+                const SizedBox(width: 8),
                 Text(
-                  'الاهتمامات',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+                  AppStrings.interests(context),
+                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
                 ),
               ],
             ),
             Text(
-              '${_selectedInterests.length} مختار',
+              AppStrings.interestsSelectedCount(
+                  context, _selectedInterests.length),
               style: TextStyle(
                 color: Colors.grey[500],
                 fontSize: 12,
@@ -399,7 +412,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'اختر اهتمامات طفلك لتخصيص المحتوى',
+          AppStrings.interestsPickHint(context),
           style: TextStyle(color: Colors.grey[500], fontSize: 12),
         ),
         const SizedBox(height: 12),
@@ -421,7 +434,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
                         : Colors.grey[600],
                   ),
                   const SizedBox(width: 4),
-                  Text(interest['name'] as String),
+                  Text(AppStrings.interestDisplayLabel(
+                      context, interest['name'] as String)),
                 ],
               ),
               onSelected: (selected) {
@@ -434,7 +448,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 });
               },
               selectedColor:
-                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              Theme.of(context).colorScheme.primary.withOpacity(0.2),
               checkmarkColor: Theme.of(context).colorScheme.primary,
             );
           }).toList(),
@@ -453,21 +467,22 @@ class _AddChildScreenState extends State<AddChildScreen> {
         ),
         child: _isLoading
             ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.save),
-                  SizedBox(width: 8),
-                  Text('حفظ', style: TextStyle(fontSize: 18)),
-                ],
-              ),
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        )
+            : Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save),
+            const SizedBox(width: 8),
+            Text(AppStrings.save(context),
+                style: const TextStyle(fontSize: 18)),
+          ],
+        ),
       ),
     );
   }

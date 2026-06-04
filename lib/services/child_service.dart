@@ -1,72 +1,61 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/child_model.dart';
-import '../models/session_model.dart';
+import '../models/session_model.dart' as models;
 import '../models/activity_model.dart';
 
-/// خدمة إدارة الأطفال مع Firestore
+/// خدمة إدارة الأطفال والجلسات عبر Supabase
 class ChildService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
   // Singleton pattern
   static final ChildService _instance = ChildService._internal();
   factory ChildService() => _instance;
   ChildService._internal();
 
-  // مرجع مجموعة الأطفال
-  CollectionReference<Map<String, dynamic>> get _childrenRef =>
-      _firestore.collection('children');
-
-  /// الحصول على معرف المستخدم الحالي
-  String? get _currentUserId => _auth.currentUser?.uid;
+  SupabaseClient get _client => Supabase.instance.client;
 
   /// الحصول على قائمة الأطفال للمستخدم الحالي
   Future<List<Child>> getChildren() async {
     try {
-      if (_currentUserId == null) return [];
+      final user = _client.auth.currentUser;
+      if (user == null) return [];
 
-      // للاختبار: جلب جميع الأطفال بدون فلتر
-      final querySnapshot = await _childrenRef
-          .orderBy('createdAt', descending: true)
-          .get();
+      final rows = await _client
+          .from('children')
+          .select()
+          .eq('parent_id', user.id)
+          .order('created_at', ascending: false);
 
-      print('Found ${querySnapshot.docs.length} children'); // للتتبع
-      print('Current user ID: $_currentUserId'); // للتتبع
-
-      return querySnapshot.docs
-          .map((doc) => Child.fromFirestore(doc))
+      return (rows as List<dynamic>)
+          .map((row) => _childFromSupabaseRow(row as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('Error getting children: $e');
+      print('[ChildService] getChildren error: $e');
       return [];
     }
   }
 
   /// Stream للاستماع لتغييرات قائمة الأطفال
   Stream<List<Child>> getChildrenStream() {
-    if (_currentUserId == null) return Stream.value([]);
-
-    return _childrenRef
-        .where('parentId', isEqualTo: _currentUserId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Child.fromFirestore(doc))
-            .toList());
+    return Stream.value([]);
   }
 
   /// الحصول على طفل بالـ ID
   Future<Child?> getChildById(String id) async {
     try {
-      final doc = await _childrenRef.doc(id).get();
-      if (doc.exists) {
-        return Child.fromFirestore(doc);
-      }
-      return null;
+      final user = _client.auth.currentUser;
+      if (user == null) return null;
+
+      final row = await _client
+          .from('children')
+          .select()
+          .eq('id', id)
+          .eq('parent_id', user.id)
+          .maybeSingle();
+
+      if (row == null) return null;
+      return _childFromSupabaseRow(row as Map<String, dynamic>);
     } catch (e) {
-      print('Error getting child: $e');
+      print('[ChildService] getChildById error: $e');
       return null;
     }
   }
@@ -74,27 +63,27 @@ class ChildService {
   /// إضافة طفل جديد
   Future<ServiceResult> addChild(Child child) async {
     try {
-      if (_currentUserId == null) {
+      final user = _client.auth.currentUser;
+      if (user == null) {
         return ServiceResult(
           success: false,
           message: 'يجب تسجيل الدخول أولاً',
         );
       }
 
-      // إنشاء الطفل مع معرف الوالد
-      final newChildData = child.copyWith(
-        parentId: _currentUserId,
-        createdAt: DateTime.now(),
-      ).toJson();
-
-      final docRef = await _childrenRef.add(newChildData);
-      
-      // جلب الطفل المضاف مع ID
-      final addedChild = child.copyWith(
-        id: docRef.id,
-        parentId: _currentUserId,
-        createdAt: DateTime.now(),
+      final now = DateTime.now();
+      final payload = _toSupabasePayload(
+        child.copyWith(createdAt: now),
+        parentId: user.id,
       );
+
+      final inserted = await _client
+          .from('children')
+          .insert(payload)
+          .select()
+          .single();
+
+      final addedChild = _childFromSupabaseRow(inserted as Map<String, dynamic>);
 
       return ServiceResult(
         success: true,
@@ -102,6 +91,7 @@ class ChildService {
         data: addedChild,
       );
     } catch (e) {
+      print('[ChildService] addChild error: $e');
       return ServiceResult(
         success: false,
         message: 'حدث خطأ: $e',
@@ -112,14 +102,28 @@ class ChildService {
   /// تحديث بيانات طفل
   Future<ServiceResult> updateChild(Child child) async {
     try {
-      await _childrenRef.doc(child.id).update(child.toJson());
-      
+      final user = _client.auth.currentUser;
+      if (user == null) {
+        return ServiceResult(
+          success: false,
+          message: 'يجب تسجيل الدخول أولاً',
+        );
+      }
+
+      final payload = _toSupabasePayload(child, parentId: user.id);
+      await _client
+          .from('children')
+          .update(payload)
+          .eq('id', child.id)
+          .eq('parent_id', user.id);
+
       return ServiceResult(
         success: true,
         message: 'تم تحديث البيانات بنجاح',
         data: child,
       );
     } catch (e) {
+      print('[ChildService] updateChild error: $e');
       return ServiceResult(
         success: false,
         message: 'حدث خطأ: $e',
@@ -130,23 +134,26 @@ class ChildService {
   /// حذف طفل
   Future<ServiceResult> deleteChild(String id) async {
     try {
-      await _childrenRef.doc(id).delete();
-      
-      // حذف الجلسات والنشاطات المرتبطة
-      final sessionsQuery = await _firestore
-          .collection('sessions')
-          .where('childId', isEqualTo: id)
-          .get();
-      
-      for (var doc in sessionsQuery.docs) {
-        await doc.reference.delete();
+      final user = _client.auth.currentUser;
+      if (user == null) {
+        return ServiceResult(
+          success: false,
+          message: 'يجب تسجيل الدخول أولاً',
+        );
       }
+
+      await _client
+          .from('children')
+          .delete()
+          .eq('id', id)
+          .eq('parent_id', user.id);
 
       return ServiceResult(
         success: true,
         message: 'تم الحذف بنجاح',
       );
     } catch (e) {
+      print('[ChildService] deleteChild error: $e');
       return ServiceResult(
         success: false,
         message: 'حدث خطأ: $e',
@@ -154,92 +161,214 @@ class ChildService {
     }
   }
 
-  /// الحصول على جلسات طفل
-  Future<List<Session>> getChildSessions(String childId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('sessions')
-          .where('childId', isEqualTo: childId)
-          .orderBy('startTime', descending: true)
-          .limit(10)
-          .get();
+  static int _parseAge(dynamic raw) {
+    if (raw == null) return 5;
+    if (raw is int) return raw;
+    if (raw is num) return raw.round();
+    if (raw is String) return int.tryParse(raw) ?? 5;
+    return 5;
+  }
 
-      return querySnapshot.docs.map((doc) {
-        final data = doc.data();
-        return Session(
-          id: doc.id,
-          childId: data['childId'] ?? '',
-          startTime: (data['startTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
-          endTime: (data['endTime'] as Timestamp?)?.toDate(),
-          totalMinutes: data['totalMinutes'] ?? 0,
-          activities: (data['activities'] as List<dynamic>?)
-              ?.map((a) => Activity(
-                    id: a['id'] ?? '',
-                    title: a['title'] ?? '',
-                    type: a['type'] ?? '',
-                    zone: a['zone'] ?? '',
-                    duration: a['duration'] ?? 0,
-                    result: a['result'] ?? '',
-                    starsEarned: a['starsEarned'] ?? 0,
-                    completedAt: (a['completedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-                  ))
-              .toList() ?? [],
-          zonesVisited: Map<String, int>.from(data['zonesVisited'] ?? {}),
-          mood: data['mood'] ?? '',
-          focusLevel: data['focusLevel'] ?? '',
-          starsEarned: data['starsEarned'] ?? 0,
-        );
-      }).toList();
+  Child _childFromSupabaseRow(Map<String, dynamic> row) {
+    final createdAtRaw = row['created_at'];
+    final createdAt = createdAtRaw is String
+        ? (DateTime.tryParse(createdAtRaw) ?? DateTime.now())
+        : DateTime.now();
+
+    return Child(
+      id: (row['id'] ?? '') as String,
+      name: (row['name'] ?? '') as String,
+      age: _parseAge(row['age']),
+      gender: (row['gender'] ?? 'ذكر') as String,
+      avatar: (row['avatar'] ?? '👦') as String,
+      interests: List<String>.from(row['interests'] ?? const []),
+      createdAt: createdAt,
+      parentId: row['parent_id'] as String?,
+      parentNotes: row['parent_notes'] as String?,
+    );
+  }
+
+  Map<String, dynamic> _toSupabasePayload(Child child, {required String parentId}) {
+    return {
+      'name': child.name,
+      'age': child.age,
+      'gender': child.gender,
+      'avatar': child.avatar,
+      'interests': child.interests,
+      'created_at': child.createdAt.toIso8601String(),
+      'parent_id': parentId,
+      'parent_notes': child.parentNotes,
+    };
+  }
+
+  static DateTime _parseDate(dynamic v) {
+    if (v == null) return DateTime.now();
+    if (v is DateTime) return v;
+    if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  static Map<String, int> _zonesVisitedFromJson(dynamic raw) {
+    if (raw is Map) {
+      return raw.map(
+        (k, v) => MapEntry(
+          k.toString(),
+          (v is num) ? v.round() : int.tryParse('$v') ?? 0,
+        ),
+      );
+    }
+    return {};
+  }
+
+  static List<Activity> _activitiesFromJson(dynamic raw) {
+    if (raw is! List) return [];
+    final out = <Activity>[];
+    for (final a in raw) {
+      if (a is Map) {
+        out.add(Activity.fromJson(Map<String, dynamic>.from(a)));
+      }
+    }
+    return out;
+  }
+
+  models.Session _sessionFromSupabaseRow(Map<String, dynamic> data) {
+    return models.Session(
+      id: data['id']?.toString() ?? '',
+      childId: data['child_id']?.toString() ?? '',
+      startTime: _parseDate(data['start_time']),
+      endTime: data['end_time'] != null ? _parseDate(data['end_time']) : null,
+      totalMinutes: (data['total_minutes'] is num)
+          ? (data['total_minutes'] as num).round()
+          : int.tryParse('${data['total_minutes']}') ?? 0,
+      activities: _activitiesFromJson(data['activities']),
+      zonesVisited: _zonesVisitedFromJson(data['zones_visited']),
+      mood: data['mood']?.toString() ?? '',
+      focusLevel: data['focus_level']?.toString() ?? '',
+      starsEarned: (data['stars_earned'] is num)
+          ? (data['stars_earned'] as num).round()
+          : int.tryParse('${data['stars_earned']}') ?? 0,
+    );
+  }
+
+  /// الحصول على جلسات طفل
+  Future<List<models.Session>> getChildSessions(String childId) async {
+    return getSessionsForChild(childId, limit: 10);
+  }
+
+  /// الحصول على جلسات طفل مع فلاتر زمنية
+  Future<List<models.Session>> getSessionsForChild(
+    String childId, {
+    DateTime? from,
+    DateTime? to,
+    int? limit,
+  }) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return [];
+
+      dynamic query = _client
+          .from('sessions')
+          .select()
+          .eq('child_id', childId)
+          .eq('parent_id', user.id);
+
+      if (from != null) {
+        query = query.gte('start_time', from.toIso8601String());
+      }
+      if (to != null) {
+        query = query.lte('start_time', to.toIso8601String());
+      }
+      query = query.order('start_time', ascending: false);
+      if (limit != null) {
+        query = query.limit(limit);
+      }
+
+      final rows = await query;
+
+      return (rows as List<dynamic>)
+          .map((row) => _sessionFromSupabaseRow(row as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      print('Error getting sessions: $e');
+      print('[ChildService] getSessionsForChild error: $e');
       return [];
+    }
+  }
+
+  /// الحصول على جلسة واحدة بالمعرف
+  Future<models.Session?> getSessionById(String sessionId) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return null;
+      final row = await _client
+          .from('sessions')
+          .select()
+          .eq('id', sessionId)
+          .eq('parent_id', user.id)
+          .maybeSingle();
+      if (row == null) return null;
+      return _sessionFromSupabaseRow(row as Map<String, dynamic>);
+    } catch (e) {
+      print('[ChildService] getSessionById error: $e');
+      return null;
     }
   }
 
   /// الحصول على إحصائيات طفل
   Future<ChildStats> getChildStats(String childId) async {
+    final empty = ChildStats(
+      totalMinutes: 0,
+      totalActivities: 0,
+      totalStars: 0,
+      averageDailyMinutes: 0,
+      favoriteZone: 'غير محدد',
+      topSkill: 'التعلم',
+    );
     try {
-      // جلب الجلسات لحساب الإحصائيات
-      final sessionsQuery = await _firestore
-          .collection('sessions')
-          .where('childId', isEqualTo: childId)
-          .get();
+      final user = _client.auth.currentUser;
+      if (user == null) return empty;
+
+      final rows = await _client
+          .from('sessions')
+          .select()
+          .eq('child_id', childId)
+          .eq('parent_id', user.id);
 
       int totalMinutes = 0;
       int totalActivities = 0;
       int totalStars = 0;
-      Map<String, int> zonesCounts = {};
+      final Map<String, int> zonesCounts = {};
 
-      for (var doc in sessionsQuery.docs) {
-        final data = doc.data();
-        totalMinutes += (data['totalMinutes'] ?? 0) as int;
-        totalStars += (data['starsEarned'] ?? 0) as int;
-        
-        final activities = data['activities'] as List<dynamic>? ?? [];
-        totalActivities += activities.length;
+      final weekAgo = DateTime.now().subtract(const Duration(days: 7));
+      int weeklyMinutes = 0;
 
-        final zones = Map<String, int>.from(data['zonesVisited'] ?? {});
-        zones.forEach((zone, count) {
+      for (final r in rows as List<dynamic>) {
+        final data = r as Map<String, dynamic>;
+        final mins = (data['total_minutes'] is num)
+            ? (data['total_minutes'] as num).round()
+            : int.tryParse('${data['total_minutes']}') ?? 0;
+        totalMinutes += mins;
+        totalStars += (data['stars_earned'] is num)
+            ? (data['stars_earned'] as num).round()
+            : int.tryParse('${data['stars_earned']}') ?? 0;
+
+        final acts = data['activities'];
+        if (acts is List) {
+          totalActivities += acts.length;
+        }
+
+        _zonesVisitedFromJson(data['zones_visited'])
+            .forEach((zone, count) {
           zonesCounts[zone] = (zonesCounts[zone] ?? 0) + count;
         });
+
+        final st = _parseDate(data['start_time']);
+        if (st.isAfter(weekAgo)) {
+          weeklyMinutes += mins;
+        }
       }
 
-      // حساب المعدل اليومي (آخر 7 أيام)
-      final now = DateTime.now();
-      final weekAgo = now.subtract(const Duration(days: 7));
-      final recentSessionsQuery = await _firestore
-          .collection('sessions')
-          .where('childId', isEqualTo: childId)
-          .where('startTime', isGreaterThan: Timestamp.fromDate(weekAgo))
-          .get();
+      final averageDailyMinutes = (weeklyMinutes / 7).round();
 
-      int weeklyMinutes = 0;
-      for (var doc in recentSessionsQuery.docs) {
-        weeklyMinutes += (doc.data()['totalMinutes'] ?? 0) as int;
-      }
-      int averageDailyMinutes = (weeklyMinutes / 7).round();
-
-      // المنطقة المفضلة
       String favoriteZone = 'غير محدد';
       if (zonesCounts.isNotEmpty) {
         favoriteZone = zonesCounts.entries
@@ -256,40 +385,33 @@ class ChildService {
         topSkill: 'التعلم',
       );
     } catch (e) {
-      print('Error getting stats: $e');
-      return ChildStats(
-        totalMinutes: 0,
-        totalActivities: 0,
-        totalStars: 0,
-        averageDailyMinutes: 0,
-        favoriteZone: 'غير محدد',
-        topSkill: 'التعلم',
-      );
+      print('[ChildService] getChildStats error: $e');
+      return empty;
     }
   }
 
   /// حفظ جلسة جديدة
-  Future<ServiceResult> saveSession(Session session) async {
+  Future<ServiceResult> saveSession(models.Session session) async {
     try {
-      await _firestore.collection('sessions').add({
-        'childId': session.childId,
-        'startTime': Timestamp.fromDate(session.startTime),
-        'endTime': session.endTime != null ? Timestamp.fromDate(session.endTime!) : null,
-        'totalMinutes': session.totalMinutes,
-        'activities': session.activities.map((a) => {
-          'id': a.id,
-          'title': a.title,
-          'type': a.type,
-          'zone': a.zone,
-          'duration': a.duration,
-          'result': a.result,
-          'starsEarned': a.starsEarned,
-          'completedAt': Timestamp.fromDate(a.completedAt),
-        }).toList(),
-        'zonesVisited': session.zonesVisited,
+      final user = _client.auth.currentUser;
+      if (user == null) {
+        return ServiceResult(
+          success: false,
+          message: 'يجب تسجيل الدخول أولاً',
+        );
+      }
+
+      await _client.from('sessions').insert({
+        'child_id': session.childId,
+        'parent_id': user.id,
+        'start_time': session.startTime.toIso8601String(),
+        'end_time': session.endTime?.toIso8601String(),
+        'total_minutes': session.totalMinutes,
+        'activities': session.activities.map((a) => a.toJson()).toList(),
+        'zones_visited': session.zonesVisited,
         'mood': session.mood,
-        'focusLevel': session.focusLevel,
-        'starsEarned': session.starsEarned,
+        'focus_level': session.focusLevel,
+        'stars_earned': session.starsEarned,
       });
 
       return ServiceResult(

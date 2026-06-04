@@ -2,15 +2,12 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev. flutter.flutter-gradle-plugin")
-    // أضيفي هذا السطر لـ Firebase
-    id("com.google.gms.google-services")
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    // ✅ تم التغيير
     namespace = "com.alfaseelah.parent_app"
-    compileSdk = flutter. compileSdkVersion
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -19,26 +16,21 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion. VERSION_17.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
-        // ✅ تم التغيير
         applicationId = "com.alfaseelah.parent_app"
-
-        // ✅ تم تغيير minSdk لدعم Firebase
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-
-        // ✅ مطلوب لـ Firebase
         multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs. getByName("debug")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
@@ -47,12 +39,6 @@ flutter {
     source = "../.."
 }
 
-// ✅ إضافة dependencies لـ Firebase
 dependencies {
-    // Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("com.google.firebase:firebase-analytics")
-
-    // MultiDex
     implementation("androidx.multidex:multidex:2.0.1")
 }

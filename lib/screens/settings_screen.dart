@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../app_locale.dart';
+import '../utils/app_strings.dart';
 import '../services/auth_service.dart';
 import '../services/child_service.dart';
 import '../models/child_model.dart';
+import '../services/ble_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,29 +16,28 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _authService = AuthService();
   final _childService = ChildService();
-  
+
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _darkModeEnabled = false;
   bool _autoUpdateEnabled = true;
   bool _analyticsEnabled = true;
-  String _selectedLanguage = 'العربية';
   double _dailyTimeLimit = 45;
-  
+
   UserData? _userData;
   List<Child> _children = [];
   bool _isLoading = true;
-  
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     final userData = await _authService.getCurrentUserData();
     final children = await _childService.getChildren();
-    
+
     if (mounted) {
       setState(() {
         _userData = userData;
@@ -49,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإعدادات'),
+        title: Text(AppStrings.settingsTitle(context)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -120,7 +122,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _userData?.name ?? 'المستخدم',
+                    _userData?.name ??
+                        AppStrings.defaultUserDisplay(context),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -136,9 +139,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: const Color(0xFF90EE90).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'حساب مفعّل',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF2E7D32)),
+                    child: Text(
+                      AppStrings.accountActive(context),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF2E7D32)),
                     ),
                   ),
                 ],
@@ -164,9 +168,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'الأطفال المسجلون',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppStrings.registeredChildren(context),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
                   onPressed: () async {
@@ -174,7 +179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _loadData();
                   },
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('إضافة'),
+                  label: Text(AppStrings.addShort(context)),
                 ),
               ],
             ),
@@ -182,10 +187,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_children.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('لا يوجد أطفال مسجلون بعد'),
+                  padding: const EdgeInsets.all(16),
+                  child: Text(AppStrings.noChildrenYetSettings(context)),
                 ),
               )
             else
@@ -196,9 +201,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     _buildChildTile(
                       child.name,
-                      '${child.age} سنوات',
+                      AppStrings.yearsOldShort(context, child.age),
                       child.avatar,
-                      index == 0,
+                      false, // Will be true when RFID identifies the child
                     ),
                     if (index < _children.length - 1) const Divider(),
                   ],
@@ -234,14 +239,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: const Color(0xFF90EE90).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_circle, size: 14, color: Color(0xFF2E7D32)),
-                  SizedBox(width: 4),
+                  const Icon(Icons.play_circle,
+                      size: 14, color: Color(0xFF2E7D32)),
+                  const SizedBox(width: 4),
                   Text(
-                    'يلعب الآن',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF2E7D32)),
+                    AppStrings.playingNow(context),
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF2E7D32)),
                   ),
                 ],
               ),
@@ -257,13 +264,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildGeneralSettings() {
     return _buildSettingsSection(
-      title: 'الإعدادات العامة',
+      title: AppStrings.sectionGeneral(context),
       icon: Icons.settings,
       children: [
         _buildSwitchTile(
           icon: Icons.dark_mode,
-          title: 'الوضع الداكن',
-          subtitle: 'تغيير مظهر التطبيق',
+          title: AppStrings.darkMode(context),
+          subtitle: AppStrings.darkModeSub(context),
           value: _darkModeEnabled,
           onChanged: (value) {
             setState(() {
@@ -273,8 +280,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildSwitchTile(
           icon: Icons.volume_up,
-          title: 'الأصوات',
-          subtitle: 'أصوات التنبيهات والتفاعل',
+          title: AppStrings.sounds(context),
+          subtitle: AppStrings.soundsSub(context),
           value: _soundEnabled,
           onChanged: (value) {
             setState(() {
@@ -284,14 +291,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildNavigationTile(
           icon: Icons.language,
-          title: 'اللغة',
-          subtitle: _selectedLanguage,
+          title: AppStrings.language(context),
+          subtitle: AppStrings.activeLanguageDisplayForSettings(context),
           onTap: () => _showLanguageDialog(),
         ),
         _buildSwitchTile(
           icon: Icons.system_update,
-          title: 'التحديث التلقائي',
-          subtitle: 'تحديث المحتوى تلقائياً',
+          title: AppStrings.autoUpdate(context),
+          subtitle: AppStrings.autoUpdateSub(context),
           value: _autoUpdateEnabled,
           onChanged: (value) {
             setState(() {
@@ -305,13 +312,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildNotificationSettings() {
     return _buildSettingsSection(
-      title: 'الإشعارات',
+      title: AppStrings.notificationsSection(context),
       icon: Icons.notifications,
       children: [
         _buildSwitchTile(
           icon: Icons.notifications_active,
-          title: 'تفعيل الإشعارات',
-          subtitle: 'استلام إشعارات التطبيق',
+          title: AppStrings.enableNotifications(context),
+          subtitle: AppStrings.enableNotificationsSub(context),
           value: _notificationsEnabled,
           onChanged: (value) {
             setState(() {
@@ -321,8 +328,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildNavigationTile(
           icon: Icons.tune,
-          title: 'تخصيص الإشعارات',
-          subtitle: 'اختر أنواع الإشعارات',
+          title: AppStrings.customizeNotifications(context),
+          subtitle: AppStrings.customizeNotificationsSub(context),
           onTap: () => _showNotificationTypesDialog(),
           enabled: _notificationsEnabled,
         ),
@@ -332,17 +339,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildParentalControlSettings() {
     return _buildSettingsSection(
-      title: 'الرقابة الأبوية',
+      title: AppStrings.parentalControls(context),
       icon: Icons.shield,
       children: [
         _buildSliderTile(
           icon: Icons.timer,
-          title: 'الحد الزمني اليومي',
+          title: AppStrings.dailyTimeLimit(context),
           value: _dailyTimeLimit,
           min: 15,
           max: 120,
           divisions: 21,
-          label: '${_dailyTimeLimit.round()} دقيقة',
+          label: AppStrings.minutesCount(
+              context, _dailyTimeLimit.round()),
           onChanged: (value) {
             setState(() {
               _dailyTimeLimit = value;
@@ -351,20 +359,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildNavigationTile(
           icon: Icons.content_paste,
-          title: 'فلترة المحتوى',
-          subtitle: 'التحكم في المحتوى المعروض',
+          title: AppStrings.contentFilter(context),
+          subtitle: AppStrings.contentFilterSub(context),
           onTap: () => _showContentFilterDialog(),
         ),
         _buildNavigationTile(
           icon: Icons.schedule,
-          title: 'جدول الاستخدام',
-          subtitle: 'تحديد أوقات اللعب المسموحة',
+          title: AppStrings.usageSchedule(context),
+          subtitle: AppStrings.usageScheduleSub(context),
           onTap: () => _showScheduleDialog(),
         ),
         _buildNavigationTile(
           icon: Icons.lock,
-          title: 'رمز الحماية',
-          subtitle: 'تغيير رمز PIN',
+          title: AppStrings.pinCode(context),
+          subtitle: AppStrings.pinCodeSub(context),
           onTap: () => _showChangePinDialog(),
         ),
       ],
@@ -373,13 +381,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildPrivacySettings() {
     return _buildSettingsSection(
-      title: 'الخصوصية والبيانات',
+      title: AppStrings.privacyData(context),
       icon: Icons.privacy_tip,
       children: [
         _buildSwitchTile(
           icon: Icons.analytics,
-          title: 'مشاركة التحليلات',
-          subtitle: 'المساعدة في تحسين التطبيق',
+          title: AppStrings.shareAnalytics(context),
+          subtitle: AppStrings.shareAnalyticsSub(context),
           value: _analyticsEnabled,
           onChanged: (value) {
             setState(() {
@@ -389,14 +397,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildNavigationTile(
           icon: Icons.download,
-          title: 'تحميل البيانات',
-          subtitle: 'تحميل نسخة من بياناتك',
+          title: AppStrings.downloadData(context),
+          subtitle: AppStrings.downloadDataSub(context),
           onTap: () => _downloadData(),
         ),
         _buildNavigationTile(
           icon: Icons.delete_forever,
-          title: 'حذف البيانات',
-          subtitle: 'حذف جميع البيانات نهائياً',
+          title: AppStrings.deleteData(context),
+          subtitle: AppStrings.deleteDataSub(context),
           onTap: () => _showDeleteDataDialog(),
           isDestructive: true,
         ),
@@ -406,31 +414,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSupportSection() {
     return _buildSettingsSection(
-      title: 'الدعم والمساعدة',
+      title: AppStrings.supportHelp(context),
       icon: Icons.help,
       children: [
         _buildNavigationTile(
           icon: Icons.help_outline,
-          title: 'الأسئلة الشائعة',
-          subtitle: 'إجابات على الأسئلة المتكررة',
+          title: AppStrings.faq(context),
+          subtitle: AppStrings.faqSub(context),
           onTap: () => _showFAQScreen(),
         ),
         _buildNavigationTile(
           icon: Icons.chat_bubble_outline,
-          title: 'تواصل معنا',
-          subtitle: 'إرسال رسالة للدعم الفني',
+          title: AppStrings.contactUs(context),
+          subtitle: AppStrings.contactUsSub(context),
           onTap: () => _showContactDialog(),
         ),
         _buildNavigationTile(
           icon: Icons.star_outline,
-          title: 'تقييم التطبيق',
-          subtitle: 'شاركنا رأيك',
+          title: AppStrings.rateApp(context),
+          subtitle: AppStrings.rateAppSub(context),
           onTap: () => _showRatingDialog(),
         ),
         _buildNavigationTile(
           icon: Icons.description,
-          title: 'سياسة الخصوصية',
-          subtitle: 'الشروط والأحكام',
+          title: AppStrings.privacyPolicy(context),
+          subtitle: AppStrings.privacyPolicySub(context),
           onTap: () => _showPrivacyPolicy(),
         ),
       ],
@@ -654,9 +662,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: const Icon(Icons.logout, color: Colors.red, size: 20),
         ),
-        title: const Text(
-          'تسجيل الخروج',
-          style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+        title: Text(
+          AppStrings.logout(context),
+          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
         ),
         trailing: const Icon(Icons.chevron_left, color: Colors.red),
         onTap: () => _showLogoutDialog(),
@@ -678,21 +686,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   .withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.spa, color: Color(0xFF87CEEB), size: 32),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.spa, color: Color(0xFF87CEEB), size: 32);
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'عالم الفسيلة',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            AppStrings.appTitle(context),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            'الإصدار 1.0.0',
+            AppStrings.appVersion(context),
             style: TextStyle(color: Colors.grey[500], fontSize: 14),
           ),
           const SizedBox(height: 8),
           Text(
-            '© 2024 جميع الحقوق محفوظة',
+            AppStrings.copyright(context),
             style: TextStyle(color: Colors.grey[400], fontSize: 12),
           ),
         ],
@@ -701,8 +720,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showEditProfileDialog() {
-    final nameController = TextEditingController(text: 'أحمد محمد');
-    final emailController = TextEditingController(text: 'ahmed@example.com');
+    final currentName =
+    (_userData?.name.trim().isNotEmpty ?? false)
+        ? _userData!.name.trim()
+        : AppStrings.defaultUserDisplayName(context);
+    final currentEmail = _userData?.email ?? '';
+
+    final nameController = TextEditingController(text: currentName);
+    final emailController = TextEditingController(text: currentEmail);
 
     showModalBottomSheet(
       context: context,
@@ -710,114 +735,162 @@ class _SettingsScreenState extends State<SettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery
-                .of(context)
-                .viewInsets
-                .bottom,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      builder: (sheetContext) {
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery
+                    .of(sheetContext)
+                    .viewInsets
+                    .bottom,
+                left: 20,
+                right: 20,
+                top: 20,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'تعديل الملف الشخصي',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: () {},
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Theme
-                      .of(context)
-                      .colorScheme
-                      .primary
-                      .withOpacity(0.2),
-                  child: Stack(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    AppStrings.editProfileSheetTitle(sheetContext),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () {},
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Theme
+                          .of(sheetContext)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.2),
+                      child: Stack(
+                        children: [
+                          const Icon(
+                              Icons.person, size: 50, color: Color(0xFF87CEEB)),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Theme
+                                  .of(sheetContext)
+                                  .colorScheme
+                                  .primary,
+                              child: const Icon(Icons.camera_alt, size: 16,
+                                  color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: AppStrings.nameFieldShort(sheetContext),
+                      prefixIcon: const Icon(Icons.person),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: AppStrings.emailLabel(sheetContext),
+                      prefixIcon: const Icon(Icons.email),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: AppStrings.newPasswordOptionalLabel(sheetContext),
+                      prefixIcon: const Icon(Icons.lock),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
                     children: [
-                      const Icon(
-                          Icons.person, size: 50, color: Color(0xFF87CEEB)),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Theme
-                              .of(context)
-                              .colorScheme
-                              .primary,
-                          child: const Icon(Icons.camera_alt, size: 16,
-                              color: Colors.white),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isSaving ? null : () => Navigator.pop(sheetContext),
+                          child: Text(AppStrings.cancel(sheetContext)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final newName = nameController.text.trim();
+                            if (newName.isEmpty) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      AppStrings.tr(context, 'الرجاء إدخال الاسم', 'Please enter your name')),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            setModalState(() => isSaving = true);
+                            final result = await _authService.updateProfile(
+                              name: newName,
+                            );
+                            if (!mounted || !sheetContext.mounted) return;
+                            setModalState(() => isSaving = false);
+
+                            if (result.success) {
+                              setState(() {
+                                _userData = result.user ?? _userData?.copyWith(name: newName);
+                              });
+                              await _loadData();
+                              if (!mounted || !sheetContext.mounted) return;
+                              Navigator.pop(sheetContext);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(AppStrings.changesSaved(context))),
+                              );
+                            } else {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(result.message),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          child: isSaving
+                              ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                              : Text(AppStrings.save(sheetContext)),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'الاسم',
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'البريد الإلكتروني',
-                  prefixIcon: Icon(Icons.email),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'كلمة المرور الجديدة (اختياري)',
-                  prefixIcon: Icon(Icons.lock),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('إلغاء'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('تم حفظ التغييرات')),
-                        );
-                      },
-                      child: const Text('حفظ'),
-                    ),
-                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-              const SizedBox(height: 20),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -845,14 +918,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'إعدادات $childName',
+                AppStrings.childSettingsTitle(context, childName),
                 style: const TextStyle(
                     fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: const Icon(Icons.edit, color: Color(0xFF87CEEB)),
-                title: const Text('تعديل الملف'),
+                title: Text(AppStrings.childSettingsEditProfile(context)),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/child-profile');
@@ -860,14 +933,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.timer, color: Color(0xFF90EE90)),
-                title: const Text('الحد الزمني'),
+                title: Text(AppStrings.childSettingsTimeLimit(context)),
                 onTap: () {
                   Navigator.pop(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.assessment, color: Color(0xFFFFB74D)),
-                title: const Text('التقارير'),
+                title: Text(AppStrings.childSettingsReports(context)),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/progress');
@@ -875,8 +948,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                    'حذف الملف', style: TextStyle(color: Colors.red)),
+                title: Text(
+                    AppStrings.childSettingsDeleteProfile(context),
+                    style: const TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
                   _showDeleteChildDialog(childName);
@@ -901,26 +975,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.red[400]),
                 const SizedBox(width: 8),
-                const Text('حذف ملف الطفل'),
+                Text(AppStrings.deleteChildFileTitle(context)),
               ],
             ),
             content: Text(
-              'هل أنت متأكد من حذف ملف $childName؟\n\nسيتم حذف جميع البيانات والتقارير المتعلقة بهذا الملف.  لا يمكن التراجع عن هذا الإجراء.',
+              AppStrings.deleteChildFileBody(context, childName),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(AppStrings.cancel(context)),
               ),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم حذف ملف $childName')),
+                    SnackBar(
+                        content: Text(
+                            AppStrings.childFileDeletedSnack(
+                                context, childName))),
                   );
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('حذف'),
+                child: Text(AppStrings.delete(context)),
               ),
             ],
           ),
@@ -934,53 +1011,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.language, color: Color(0xFF87CEEB)),
-                SizedBox(width: 8),
-                Text('اختر اللغة'),
+                const Icon(Icons.language, color: Color(0xFF87CEEB)),
+                const SizedBox(width: 8),
+                Text(AppStrings.chooseLanguage(context)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<String>(
-                  title: const Text('العربية'),
-                  subtitle: const Text('Arabic'),
-                  value: 'العربية',
-                  groupValue: _selectedLanguage,
+                  title: Text(AppStrings.languageArabicTitle(context)),
+                  subtitle: Text(AppStrings.languageArabicSubtitle(context)),
+                  value: 'ar',
+                  groupValue: Localizations.localeOf(context).languageCode,
                   activeColor: Theme
                       .of(context)
                       .colorScheme
                       .primary,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    await AppLocale.setLocale(Locale(value));
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('تم تغيير اللغة إلى العربية')),
+                      SnackBar(
+                        content: Text(
+                          value == 'ar'
+                              ? AppStrings.languageChangedAr(context)
+                              : AppStrings.languageChangedEn(context),
+                        ),
+                      ),
                     );
                   },
                 ),
                 RadioListTile<String>(
-                  title: const Text('English'),
-                  subtitle: const Text('الإنجليزية'),
-                  value: 'English',
-                  groupValue: _selectedLanguage,
+                  title: Text(AppStrings.languageEnglishTitle(context)),
+                  subtitle: Text(AppStrings.languageEnglishSubtitle(context)),
+                  value: 'en',
+                  groupValue: Localizations.localeOf(context).languageCode,
                   activeColor: Theme
                       .of(context)
                       .colorScheme
                       .primary,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
+                  onChanged: (value) async {
+                    if (value == null) return;
+                    await AppLocale.setLocale(Locale(value));
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Language changed to English')),
+                      SnackBar(
+                        content: Text(
+                          value == 'ar'
+                              ? AppStrings.languageChangedAr(context)
+                              : AppStrings.languageChangedEn(context),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -1018,14 +1105,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'تخصيص الإشعارات',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    AppStrings.notifCustomizeSheetTitle(context),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
                   SwitchListTile(
-                    title: const Text('نشاطات الطفل'),
-                    subtitle: const Text('إشعارات عند بدء أو انتهاء اللعب'),
+                    title: Text(AppStrings.notifChildActivityTitle(context)),
+                    subtitle: Text(AppStrings.notifChildActivitySub(context)),
                     value: activityNotifications,
                     activeColor: Theme
                         .of(context)
@@ -1038,8 +1125,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   SwitchListTile(
-                    title: const Text('تقارير التقدم'),
-                    subtitle: const Text('ملخص أسبوعي لتقدم الطفل'),
+                    title: Text(AppStrings.notifProgressReportsTitle(context)),
+                    subtitle: Text(AppStrings.notifProgressReportsSub(context)),
                     value: progressNotifications,
                     activeColor: Theme
                         .of(context)
@@ -1052,8 +1139,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   SwitchListTile(
-                    title: const Text('نصائح تربوية'),
-                    subtitle: const Text('نصائح وتوصيات من الذكاء الاصطناعي'),
+                    title: Text(AppStrings.notifTipsTitle(context)),
+                    subtitle: Text(AppStrings.notifTipsSub(context)),
                     value: tipsNotifications,
                     activeColor: Theme
                         .of(context)
@@ -1066,8 +1153,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   SwitchListTile(
-                    title: const Text('التحديثات'),
-                    subtitle: const Text('محتوى وميزات جديدة'),
+                    title: Text(AppStrings.notifUpdatesTitle(context)),
+                    subtitle: Text(AppStrings.notifUpdatesSub(context)),
                     value: updateNotifications,
                     activeColor: Theme
                         .of(context)
@@ -1084,14 +1171,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('تم حفظ إعدادات الإشعارات')),
+                        SnackBar(
+                            content: Text(
+                                AppStrings.notifSettingsSavedSnack(context))),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text('حفظ'),
+                    child: Text(AppStrings.save(context)),
                   ),
                 ],
               ),
@@ -1103,14 +1191,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showContentFilterDialog() {
-    Map<String, bool> contentFilters = {
-      'قصص': true,
-      'أنشطة تعليمية': true,
-      'ألعاب': true,
-      'محتوى ديني': true,
-      'محتوى تربوي': true,
-      'أناشيد': true,
-    };
+    Map<String, bool> contentFilters = Map.fromEntries(
+      AppStrings.initialContentFilterEntries(),
+    );
 
     showModalBottomSheet(
       context: context,
@@ -1135,19 +1218,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'فلترة المحتوى',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    AppStrings.contentFilterSheetTitle(context),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'اختر أنواع المحتوى المسموح بها للطفل',
+                    AppStrings.contentFilterSheetSubtitle(context),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 20),
-                  ... contentFilters.entries.map((entry) {
+                  ...contentFilters.entries.map((entry) {
                     return CheckboxListTile(
-                      title: Text(entry.key),
+                      title: Text(AppStrings.contentFilterOptionLabel(
+                          context, entry.key)),
                       value: entry.value,
                       activeColor: Theme
                           .of(context)
@@ -1165,13 +1249,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم حفظ إعدادات المحتوى')),
+                        SnackBar(
+                            content: Text(
+                                AppStrings.contentFilterSavedSnack(context))),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text('حفظ'),
+                    child: Text(AppStrings.save(context)),
                   ),
                 ],
               ),
@@ -1186,7 +1272,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     TimeOfDay startTime = const TimeOfDay(hour: 16, minute: 0);
     TimeOfDay endTime = const TimeOfDay(hour: 19, minute: 0);
     List<bool> selectedDays = [true, true, true, true, true, true, true];
-    List<String> dayNames = ['س', 'أ', 'إ', 'ث', 'أ', 'خ', 'ج'];
 
     showModalBottomSheet(
       context: context,
@@ -1211,9 +1296,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'جدول الاستخدام',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    AppStrings.scheduleSheetTitle(context),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -1222,8 +1307,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('وقت البدء',
-                                style: TextStyle(fontWeight: FontWeight.w500)),
+                            Text(AppStrings.startTimeLabel(context),
+                                style: const TextStyle(fontWeight: FontWeight.w500)),
                             const SizedBox(height: 8),
                             InkWell(
                               onTap: () async {
@@ -1261,8 +1346,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('وقت الانتهاء',
-                                style: TextStyle(fontWeight: FontWeight.w500)),
+                            Text(AppStrings.endTimeLabel(context),
+                                style: const TextStyle(fontWeight: FontWeight.w500)),
                             const SizedBox(height: 8),
                             InkWell(
                               onTap: () async {
@@ -1298,12 +1383,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text('أيام الاستخدام',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(AppStrings.usageDaysLabel(context),
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(7, (index) {
+                      final dayNames = AppStrings.weekDayShortLetters(context);
                       return GestureDetector(
                         onTap: () {
                           setModalState(() {
@@ -1342,13 +1428,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم حفظ جدول الاستخدام')),
+                        SnackBar(
+                            content:
+                            Text(AppStrings.scheduleSavedSnack(context))),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text('حفظ'),
+                    child: Text(AppStrings.save(context)),
                   ),
                 ],
               ),
@@ -1393,9 +1481,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'تغيير رمز الحماية',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                AppStrings.changePinSheetTitle(context),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               TextField(
@@ -1403,9 +1491,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 4,
-                decoration: const InputDecoration(
-                  labelText: 'رمز PIN الحالي',
-                  prefixIcon: Icon(Icons.lock_outline),
+                decoration: InputDecoration(
+                  labelText: AppStrings.pinCurrentLabel(context),
+                  prefixIcon: const Icon(Icons.lock_outline),
                   counterText: '',
                 ),
               ),
@@ -1415,9 +1503,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 4,
-                decoration: const InputDecoration(
-                  labelText: 'رمز PIN الجديد',
-                  prefixIcon: Icon(Icons.lock),
+                decoration: InputDecoration(
+                  labelText: AppStrings.pinNewLabel(context),
+                  prefixIcon: const Icon(Icons.lock),
                   counterText: '',
                 ),
               ),
@@ -1427,9 +1515,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 4,
-                decoration: const InputDecoration(
-                  labelText: 'تأكيد رمز PIN الجديد',
-                  prefixIcon: Icon(Icons.lock),
+                decoration: InputDecoration(
+                  labelText: AppStrings.pinConfirmLabel(context),
+                  prefixIcon: const Icon(Icons.lock),
                   counterText: '',
                 ),
               ),
@@ -1439,7 +1527,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('إلغاء'),
+                      child: Text(AppStrings.cancel(context)),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -1451,19 +1539,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             newPinController.text.length == 4) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('تم تغيير رمز الحماية بنجاح')),
+                            SnackBar(
+                                content: Text(
+                                    AppStrings.pinChangedSnack(context))),
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('رمز PIN غير متطابق أو غير صحيح'),
+                            SnackBar(
+                              content: Text(
+                                  AppStrings.pinMismatchSnack(context)),
                               backgroundColor: Colors.red,
                             ),
                           );
                         }
                       },
-                      child: const Text('حفظ'),
+                      child: Text(AppStrings.save(context)),
                     ),
                   ),
                 ],
@@ -1483,30 +1573,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.download, color: Color(0xFF87CEEB)),
-                SizedBox(width: 8),
-                Text('تحميل البيانات'),
+                const Icon(Icons.download, color: Color(0xFF87CEEB)),
+                const SizedBox(width: 8),
+                Text(AppStrings.downloadDataTitle(context)),
               ],
             ),
-            content: const Text(
-              'سيتم إرسال نسخة من بياناتك إلى بريدك الإلكتروني.\n\nتتضمن البيانات:\n• معلومات الحساب\n• ملفات الأطفال\n• تقارير التقدم\n• الإعدادات',
-            ),
+            content: Text(AppStrings.downloadDataBody(context)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(AppStrings.cancel(context)),
               ),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text(
-                        'سيتم إرسال البيانات إلى بريدك الإلكتروني')),
+                    SnackBar(
+                        content: Text(
+                            AppStrings.downloadConfirmSnack(context))),
                   );
                 },
-                child: const Text('تحميل'),
+                child: Text(AppStrings.downloadAction(context)),
               ),
             ],
           ),
@@ -1524,16 +1613,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.red[400]),
                 const SizedBox(width: 8),
-                const Text('حذف جميع البيانات'),
+                Text(AppStrings.deleteAllDataTitle(context)),
               ],
             ),
-            content: const Text(
-              'هل أنت متأكد من حذف جميع بياناتك؟\n\n⚠️ تحذير: سيتم حذف:\n• حسابك الشخصي\n• جميع ملفات الأطفال\n• جميع التقارير والإنجازات\n• جميع الإعدادات\n\nهذا الإجراء لا يمكن التراجع عنه! ',
-            ),
+            content: Text(AppStrings.deleteAllDataBody(context)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(AppStrings.cancel(context)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -1541,7 +1628,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _showFinalDeleteConfirmation();
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('حذف'),
+                child: Text(AppStrings.delete(context)),
               ),
             ],
           ),
@@ -1557,16 +1644,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
-            title: const Text('تأكيد الحذف النهائي'),
+            title: Text(AppStrings.finalDeleteTitle(context)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('اكتب "حذف" للتأكيد: '),
+                Text(AppStrings.typeDeleteToConfirm(context)),
                 const SizedBox(height: 16),
                 TextField(
                   controller: confirmController,
-                  decoration: const InputDecoration(
-                    hintText: 'اكتب حذف',
+                  decoration: InputDecoration(
+                    hintText: AppStrings.hintTypeDelete(context),
                   ),
                 ),
               ],
@@ -1574,19 +1661,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(AppStrings.cancel(context)),
               ),
               ElevatedButton(
                 onPressed: () {
-                  if (confirmController.text == 'حذف') {
+                  if (confirmController.text ==
+                      AppStrings.deleteConfirmKeyword(context)) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم حذف جميع البيانات')),
+                      SnackBar(
+                          content:
+                          Text(AppStrings.allDataDeletedSnack(context))),
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('تأكيد الحذف'),
+                child: Text(AppStrings.confirmDeleteAction(context)),
               ),
             ],
           ),
@@ -1594,32 +1684,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showFAQScreen() {
-    final faqs = [
-      {
-        'question': 'كيف أضيف طفل جديد؟',
-        'answer': 'اذهب إلى الإعدادات > الأطفال المسجلون > إضافة طفل جديد، ثم أدخل بيانات الطفل.',
+    final faqCount = AppStrings.faqCount;
+    final faqs = List.generate(
+      faqCount,
+          (i) => <String, String>{
+        'question': AppStrings.faqQ(context, i),
+        'answer': AppStrings.faqA(context, i),
       },
-      {
-        'question': 'كيف أتحكم في وقت استخدام الطفل؟',
-        'answer': 'من الإعدادات > الرقابة الأبوية > الحد الزمني اليومي، يمكنك تحديد عدد الدقائق المسموحة يومياً.',
-      },
-      {
-        'question': 'كيف أربط اللعبة بالتطبيق؟',
-        'answer': 'تأكد من تشغيل الجهاز وتفعيل البلوتوث، ثم اذهب إلى صفحة الاتصال واضغط على البحث عن الأجهزة.',
-      },
-      {
-        'question': 'هل بيانات طفلي آمنة؟',
-        'answer': 'نعم، جميع البيانات مشفرة ومحمية.  نحن لا نشارك بيانات الأطفال مع أي طرف ثالث.',
-      },
-      {
-        'question': 'كيف أحصل على تقارير تقدم طفلي؟',
-        'answer': 'من الشاشة الرئيسية، اضغط على "التقارير" أو من القائمة السفلية اختر "التقدم" لعرض تقارير مفصلة.',
-      },
-      {
-        'question': 'هل يمكنني إضافة أكثر من طفل؟',
-        'answer': 'نعم، يمكنك إضافة عدة أطفال ولكل طفل ملف خاص به مع إعدادات وتقارير منفصلة.',
-      },
-    ];
+    );
 
     showModalBottomSheet(
       context: context,
@@ -1647,9 +1719,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'الأسئلة الشائعة',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    AppStrings.faqSheetTitle(context),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
                   Expanded(
@@ -1722,25 +1794,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'تواصل معنا',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                AppStrings.contactSheetTitle(context),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               TextField(
                 controller: subjectController,
-                decoration: const InputDecoration(
-                  labelText: 'الموضوع',
-                  prefixIcon: Icon(Icons.subject),
+                decoration: InputDecoration(
+                  labelText: AppStrings.contactSubjectLabel(context),
+                  prefixIcon: const Icon(Icons.subject),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: messageController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'الرسالة',
-                  prefixIcon: Icon(Icons.message),
+                decoration: InputDecoration(
+                  labelText: AppStrings.contactMessageLabel(context),
+                  prefixIcon: const Icon(Icons.message),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -1749,14 +1821,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('تم إرسال رسالتك، سنرد عليك قريباً')),
+                    SnackBar(
+                        content: Text(AppStrings.contactSentSnack(context))),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                child: const Text('إرسال'),
+                child: Text(AppStrings.send(context)),
               ),
               const SizedBox(height: 20),
             ],
@@ -1777,11 +1849,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             return AlertDialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
-              title: const Text('تقييم التطبيق', textAlign: TextAlign.center),
+              title: Text(AppStrings.rateAppDialogTitle(context),
+                  textAlign: TextAlign.center),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('كيف تقيّم تجربتك مع عالم الفسيلة؟'),
+                  Text(AppStrings.rateAppQuestion(context)),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1803,12 +1876,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     rating == 0
-                        ? 'اضغط على النجوم للتقييم'
+                        ? AppStrings.rateTapStars(context)
                         : rating <= 2
-                        ? 'نأسف لعدم رضاك 😔'
+                        ? AppStrings.rateSorry(context)
                         : rating <= 4
-                        ? 'شكراً لتقييمك!  😊'
-                        : 'رائع! نسعد بذلك!  🎉',
+                        ? AppStrings.rateThanks(context)
+                        : AppStrings.rateGreat(context),
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
@@ -1816,18 +1889,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('لاحقاً'),
+                  child: Text(AppStrings.later(context)),
                 ),
                 ElevatedButton(
                   onPressed: rating > 0
                       ? () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('شكراً لتقييمك!  ❤️')),
+                      SnackBar(
+                          content:
+                          Text(AppStrings.thanksForRatingSnack(context))),
                     );
                   }
                       : null,
-                  child: const Text('إرسال'),
+                  child: Text(AppStrings.send(context)),
                 ),
               ],
             );
@@ -1864,9 +1939,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'سياسة الخصوصية',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    AppStrings.privacyPolicySheetTitle(context),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
                   Expanded(
@@ -1876,43 +1951,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildPolicySection(
-                            'جمع البيانات',
-                            'نقوم بجمع البيانات الضرورية فقط لتقديم تجربة تعليمية مخصصة لطفلك. تشمل هذه البيانات:  اسم الطفل، العمر، تفضيلات التعلم، وبيانات استخدام اللعبة.',
+                            context,
+                            AppStrings.policyCollectTitle(context),
+                            AppStrings.policyCollectBody(context),
                           ),
                           _buildPolicySection(
-                            'استخدام البيانات',
-                            'نستخدم البيانات المجمعة لـ:\n• تخصيص المحتوى التعليمي\n• إنشاء تقارير التقدم\n• تحسين تجربة المستخدم\n• تطوير ميزات جديدة',
+                            context,
+                            AppStrings.policyUseTitle(context),
+                            AppStrings.policyUseBody(context),
                           ),
                           _buildPolicySection(
-                            'حماية البيانات',
-                            'جميع البيانات مشفرة ومحمية بأحدث تقنيات الأمان. نستخدم بروتوكولات SSL/TLS لتأمين نقل البيانات.  لا نشارك بيانات الأطفال مع أي طرف ثالث تحت أي ظرف.',
+                            context,
+                            AppStrings.policyProtectTitle(context),
+                            AppStrings.policyProtectBody(context),
                           ),
                           _buildPolicySection(
-                            'حقوق المستخدم',
-                            'يحق لك في أي وقت:\n• الوصول إلى بياناتك ومراجعتها\n• تعديل بياناتك الشخصية\n• حذف بياناتك بشكل كامل\n• طلب نسخة من بياناتك\n• إيقاف جمع البيانات التحليلية',
+                            context,
+                            AppStrings.policyRightsTitle(context),
+                            AppStrings.policyRightsBody(context),
                           ),
                           _buildPolicySection(
-                            'بيانات الأطفال',
-                            'نولي اهتماماً خاصاً بحماية بيانات الأطفال:\n• لا نجمع بيانات شخصية حساسة\n• لا نعرض إعلانات للأطفال\n• لا نسمح بالتواصل مع الغرباء\n• جميع المحتوى مراجع ومناسب للأطفال',
+                            context,
+                            AppStrings.policyChildrenTitle(context),
+                            AppStrings.policyChildrenBody(context),
                           ),
                           _buildPolicySection(
-                            'ملفات تعريف الارتباط',
-                            'نستخدم ملفات تعريف الارتباط لتحسين تجربة الاستخدام وتذكر تفضيلاتك. يمكنك التحكم في إعدادات ملفات تعريف الارتباط من إعدادات جهازك.',
+                            context,
+                            AppStrings.policyCookiesTitle(context),
+                            AppStrings.policyCookiesBody(context),
                           ),
                           _buildPolicySection(
-                            'التحديثات على السياسة',
-                            'قد نقوم بتحديث سياسة الخصوصية من وقت لآخر.  سنقوم بإشعارك بأي تغييرات جوهرية عبر التطبيق أو البريد الإلكتروني.',
+                            context,
+                            AppStrings.policyUpdatesTitle(context),
+                            AppStrings.policyUpdatesBody(context),
                           ),
                           _buildPolicySection(
-                            'التواصل',
-                            'للأسئلة أو الاستفسارات المتعلقة بالخصوصية:\n\nالبريد الإلكتروني: privacy@alfaseelah.com\nالهاتف: +966-XX-XXX-XXXX\nالعنوان: المملكة العربية السعودية',
+                            context,
+                            AppStrings.policyContactTitle(context),
+                            AppStrings.policyContactBody(context),
                           ),
                           const SizedBox(height: 20),
                           Center(
                             child: Column(
                               children: [
                                 Text(
-                                  'آخر تحديث: يناير 2024',
+                                  AppStrings.policyUpdatedLine(context),
                                   style: TextStyle(
                                     color: Colors.grey[500],
                                     fontSize: 12,
@@ -1920,7 +2003,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'الإصدار 1.0',
+                                  AppStrings.policyVersionLine(context),
                                   style: TextStyle(
                                     color: Colors.grey[400],
                                     fontSize: 11,
@@ -1943,7 +2026,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPolicySection(String title, String content) {
+  Widget _buildPolicySection(
+      BuildContext context, String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
@@ -1978,18 +2062,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.logout, color: Colors.red),
-                SizedBox(width: 8),
-                Text('تسجيل الخروج'),
+                const Icon(Icons.logout, color: Colors.red),
+                const SizedBox(width: 8),
+                Text(AppStrings.logoutConfirmTitle(context)),
               ],
             ),
-            content: const Text('هل أنت متأكد من تسجيل الخروج من حسابك؟'),
+            content: Text(AppStrings.logoutConfirmBody(context)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('إلغاء'),
+                child: Text(AppStrings.cancel(context)),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -1998,12 +2082,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) {
                     Navigator.pushReplacementNamed(context, '/login');
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم تسجيل الخروج بنجاح')),
+                      SnackBar(
+                          content:
+                          Text(AppStrings.logoutSuccess(context))),
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('تسجيل الخروج'),
+                child: Text(AppStrings.logout(context)),
               ),
             ],
           ),

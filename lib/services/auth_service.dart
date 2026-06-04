@@ -1,91 +1,119 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// خدمة المصادقة مع Firebase
+import '../utils/app_strings.dart';
+import 'supabase_service.dart';
+
+String? _firstNonEmptyField(List<dynamic> values) {
+  for (final v in values) {
+    if (v == null) continue;
+    final s = v.toString().trim();
+    if (s.isNotEmpty) return s;
+  }
+  return null;
+}
+
+String? _nameFromUserMetadata(User user) {
+  final meta = user.userMetadata;
+  if (meta == null) return null;
+  return _firstNonEmptyField([meta['full_name'], meta['name']]);
+}
+
+String? _emailLocalDisplayName(User user) {
+  final email = user.email;
+  if (email == null || email.isEmpty) return null;
+  final local = email.split('@').first.trim();
+  if (local.isEmpty) return null;
+  return '${local[0].toUpperCase()}${local.length > 1 ? local.substring(1) : ''}';
+}
+
+/// خدمة المصادقة مع Supabase
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   // Singleton pattern
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  // الحصول على المستخدم الحالي من Firebase
-  User? get currentFirebaseUser => _auth.currentUser;
-  
+  final SupabaseClient _client = Supabase.instance.client;
+  final SupabaseService _supabaseService = SupabaseService();
+
   // حالة تسجيل الدخول
-  bool get isLoggedIn => _auth.currentUser != null;
+  bool get isLoggedIn => _client.auth.currentUser != null;
 
-  // Stream للاستماع لتغييرات حالة المصادقة
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  /// الحصول على بيانات المستخدم من Firestore
+  /// الحصول على بيانات المستخدم من جدول `profiles` في Supabase
   Future<UserData?> getCurrentUserData() async {
     try {
-      final user = _auth.currentUser;
+      final user = _client.auth.currentUser;
       if (user == null) return null;
 
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        return UserData.fromFirestore(doc);
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final data = response is Map<String, dynamic> ? response : null;
+      if (data != null) {
+        final profileName = _firstNonEmptyField([
+          data['name'],
+          data['full_name'],
+          data['display_name'],
+        ]);
+        if (profileName != null) {
+          return UserData.fromProfileRow({...data, 'name': profileName});
+        }
+        final u = UserData.fromProfileRow(data);
+        if (u.name.isNotEmpty) return u;
+        final fromMeta = _nameFromUserMetadata(user);
+        final fromEmail = _emailLocalDisplayName(user);
+        final resolved =
+            fromMeta ?? fromEmail ?? AppStrings.defaultUserDisplayName(null);
+        return u.copyWith(name: resolved);
       }
-      return null;
+
+      return _userDataFromAuthUser(user);
     } catch (e) {
-      return null;
+      print('[AuthService] getCurrentUserData error: $e');
+      final user = _client.auth.currentUser;
+      if (user == null) return null;
+      return _userDataFromAuthUser(user);
     }
+  }
+
+  UserData _userDataFromAuthUser(User user) {
+    String name = _nameFromUserMetadata(user) ??
+        _emailLocalDisplayName(user) ??
+        AppStrings.defaultUserDisplayName(null);
+
+    return UserData(
+      id: user.id,
+      email: user.email ?? '',
+      name: name,
+      phone: null,
+      avatarUrl: null,
+      createdAt: DateTime.now(),
+    );
   }
 
   /// تسجيل الدخول
   Future<AuthResult> login(String email, String password) async {
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
+      await _supabaseService.login(email, password);
 
-      if (userCredential.user != null) {
-        // جلب بيانات المستخدم من Firestore
-        final userData = await getCurrentUserData();
-        
-        return AuthResult(
-          success: true,
-          message: 'تم تسجيل الدخول بنجاح',
-          user: userData,
-        );
-      } else {
-        return AuthResult(
-          success: false,
-          message: 'حدث خطأ غير متوقع',
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'لا يوجد حساب بهذا البريد الإلكتروني';
-          break;
-        case 'wrong-password':
-          message = 'كلمة المرور غير صحيحة';
-          break;
-        case 'invalid-email':
-          message = 'البريد الإلكتروني غير صحيح';
-          break;
-        case 'user-disabled':
-          message = 'تم تعطيل هذا الحساب';
-          break;
-        case 'invalid-credential':
-          message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-          break;
-        default:
-          message = 'حدث خطأ: ${e.message}';
-      }
-      return AuthResult(success: false, message: message);
+      final userData = await getCurrentUserData();
+      return AuthResult(
+        success: true,
+        message: AppStrings.tr(null, 'تم تسجيل الدخول بنجاح', 'Signed in successfully'),
+        user: userData,
+      );
     } catch (e) {
+      print('[AuthService] login error: $e');
       return AuthResult(
         success: false,
-        message: 'حدث خطأ في الاتصال: $e',
+        message: _mapSupabaseAuthError(
+          e,
+          fallback: AppStrings.tr(null, 'حدث خطأ غير متوقع', 'Something went wrong'),
+        ),
       );
     }
   }
@@ -100,67 +128,71 @@ class AuthService {
     try {
       // التحقق من البيانات
       if (name.isEmpty) {
-        return AuthResult(success: false, message: 'الرجاء إدخال الاسم');
-      }
-      if (!_isValidEmail(email)) {
-        return AuthResult(success: false, message: 'البريد الإلكتروني غير صحيح');
-      }
-      if (password.length < 6) {
-        return AuthResult(success: false, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-      }
-
-      // إنشاء الحساب في Firebase Auth
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-
-      if (userCredential.user != null) {
-        // حفظ بيانات المستخدم في Firestore
-        final userData = UserData(
-          id: userCredential.user!.uid,
-          email: email.trim(),
-          name: name,
-          phone: phone,
-          createdAt: DateTime.now(),
-        );
-
-        await _firestore.collection('users').doc(userCredential.user!.uid).set(userData.toJson());
-
-        // تحديث اسم العرض في Firebase Auth
-        await userCredential.user!.updateDisplayName(name);
-
-        return AuthResult(
-          success: true,
-          message: 'تم إنشاء الحساب بنجاح',
-          user: userData,
-        );
-      } else {
         return AuthResult(
           success: false,
-          message: 'حدث خطأ غير متوقع',
+          message: AppStrings.tr(null, 'الرجاء إدخال الاسم', 'Please enter your name'),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'email-already-in-use':
-          message = 'هذا البريد الإلكتروني مستخدم بالفعل';
-          break;
-        case 'weak-password':
-          message = 'كلمة المرور ضعيفة جداً';
-          break;
-        case 'invalid-email':
-          message = 'البريد الإلكتروني غير صحيح';
-          break;
-        default:
-          message = 'حدث خطأ: ${e.message}';
+      if (!_isValidEmail(email)) {
+        return AuthResult(
+          success: false,
+          message: AppStrings.tr(null, 'البريد الإلكتروني غير صحيح', 'Invalid email address'),
+        );
       }
-      return AuthResult(success: false, message: message);
+      if (password.length < 6) {
+        return AuthResult(
+          success: false,
+          message: AppStrings.tr(
+            null,
+            'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+            'Password must be at least 6 characters',
+          ),
+        );
+      }
+
+      final authResponse = await _client.auth.signUp(
+        email: email.trim(),
+        password: password,
+        data: {
+          'full_name': name.trim(),
+          'name': name.trim(),
+        },
+      );
+
+      final userId = authResponse.user?.id ?? _client.auth.currentUser?.id;
+      if (userId == null) {
+        return AuthResult(
+          success: false,
+          message: AppStrings.tr(null, 'حدث خطأ غير متوقع', 'Something went wrong'),
+        );
+      }
+
+      // Save/Upsert profile in `profiles` table.
+      await _client.from('profiles').upsert(
+        {
+          'id': userId,
+          'email': email.trim(),
+          'name': name.trim(),
+          'phone': phone,
+          'created_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'id',
+      );
+
+      final userData = await getCurrentUserData();
+      return AuthResult(
+        success: true,
+        message: AppStrings.tr(null, 'تم إنشاء الحساب بنجاح', 'Account created successfully'),
+        user: userData,
+      );
     } catch (e) {
+      print('[AuthService] register error: $e');
       return AuthResult(
         success: false,
-        message: 'حدث خطأ: $e',
+        message: _mapSupabaseAuthError(
+          e,
+          fallback: AppStrings.tr(null, 'حدث خطأ: $e', 'Error: $e'),
+        ),
       );
     }
   }
@@ -169,39 +201,37 @@ class AuthService {
   Future<AuthResult> forgotPassword(String email) async {
     try {
       if (!_isValidEmail(email)) {
-        return AuthResult(success: false, message: 'البريد الإلكتروني غير صحيح');
+        return AuthResult(
+          success: false,
+          message: AppStrings.tr(null, 'البريد الإلكتروني غير صحيح', 'Invalid email address'),
+        );
       }
 
-      await _auth.sendPasswordResetEmail(email: email.trim());
+      await _client.auth.resetPasswordForEmail(email.trim());
 
       return AuthResult(
         success: true,
-        message: 'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني',
+        message: AppStrings.tr(
+          null,
+          'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني',
+          'Password reset link sent to your email',
+        ),
       );
-    } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'لا يوجد حساب بهذا البريد الإلكتروني';
-          break;
-        case 'invalid-email':
-          message = 'البريد الإلكتروني غير صحيح';
-          break;
-        default:
-          message = 'حدث خطأ: ${e.message}';
-      }
-      return AuthResult(success: false, message: message);
     } catch (e) {
+      print('[AuthService] forgotPassword error: $e');
       return AuthResult(
         success: false,
-        message: 'حدث خطأ: $e',
+        message: _mapSupabaseAuthError(
+          e,
+          fallback: AppStrings.tr(null, 'حدث خطأ: $e', 'Error: $e'),
+        ),
       );
     }
   }
 
   /// تسجيل الخروج
   Future<void> logout() async {
-    await _auth.signOut();
+    await _supabaseService.logout();
   }
 
   /// تحديث بيانات المستخدم
@@ -210,39 +240,49 @@ class AuthService {
     String? phone,
   }) async {
     try {
-      final user = _auth.currentUser;
+      final user = _client.auth.currentUser;
       if (user == null) {
         return AuthResult(
           success: false,
-          message: 'يجب تسجيل الدخول أولاً',
+          message: AppStrings.tr(null, 'يجب تسجيل الدخول أولاً', 'Please sign in first'),
         );
       }
 
-      // تحديث البيانات في Firestore
       final updates = <String, dynamic>{};
       if (name != null && name.isNotEmpty) {
-        updates['name'] = name;
-        await user.updateDisplayName(name);
+        updates['name'] = name.trim();
       }
       if (phone != null) {
         updates['phone'] = phone;
       }
 
       if (updates.isNotEmpty) {
-        await _firestore.collection('users').doc(user.uid).update(updates);
+        await _client.from('profiles').update(updates).eq('id', user.id);
+      }
+
+      if (name != null && name.trim().isNotEmpty) {
+        final trimmed = name.trim();
+        await _client.auth.updateUser(
+          UserAttributes(
+            data: {
+              'full_name': trimmed,
+              'name': trimmed,
+            },
+          ),
+        );
       }
 
       final updatedUserData = await getCurrentUserData();
 
       return AuthResult(
         success: true,
-        message: 'تم تحديث البيانات بنجاح',
+        message: AppStrings.tr(null, 'تم تحديث البيانات بنجاح', 'Profile updated successfully'),
         user: updatedUserData,
       );
     } catch (e) {
       return AuthResult(
         success: false,
-        message: 'حدث خطأ: $e',
+        message: AppStrings.tr(null, 'حدث خطأ: $e', 'Error: $e'),
       );
     }
   }
@@ -250,6 +290,44 @@ class AuthService {
   /// التحقق من صحة البريد الإلكتروني
   bool _isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  String _mapSupabaseAuthError(Object e, {required String fallback}) {
+    final msg = e.toString();
+
+    // Supabase error messages differ from Firebase, so we map using text
+    // patterns while keeping your existing Arabic copy.
+    if (msg.contains('Invalid login credentials') ||
+        msg.contains('invalid login credentials') ||
+        msg.contains('Invalid password')) {
+      return AppStrings.tr(
+        null,
+        'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+        'Invalid email or password',
+      );
+    }
+    if (msg.contains('Email not confirmed') ||
+        msg.contains('email not confirmed')) {
+      return AppStrings.tr(
+        null,
+        'يرجى تأكيد البريد الإلكتروني أولاً',
+        'Please confirm your email first',
+      );
+    }
+    if (msg.contains('already registered') ||
+        msg.contains('User already registered')) {
+      return AppStrings.tr(
+        null,
+        'هذا البريد الإلكتروني مستخدم بالفعل',
+        'This email is already registered',
+      );
+    }
+    if (msg.contains('Invalid email') ||
+        msg.contains('invalid email')) {
+      return AppStrings.tr(null, 'البريد الإلكتروني غير صحيح', 'Invalid email address');
+    }
+
+    return fallback;
   }
 }
 
@@ -284,27 +362,37 @@ class UserData {
     required this.createdAt,
   });
 
-  /// إنشاء من Firestore
-  factory UserData.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  /// إنشاء من صف `profiles` في Supabase
+  factory UserData.fromProfileRow(Map<String, dynamic> row) {
+    final rawCreatedAt = row['created_at'] ?? row['createdAt'];
+    final createdAt = rawCreatedAt is String
+        ? (DateTime.tryParse(rawCreatedAt) ?? DateTime.now())
+        : (rawCreatedAt is DateTime ? rawCreatedAt : DateTime.now());
+
     return UserData(
-      id: doc.id,
-      email: data['email'] ?? '',
-      name: data['name'] ?? '',
-      phone: data['phone'],
-      avatarUrl: data['avatarUrl'],
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      id: (row['id'] ?? '') as String,
+      email: (row['email'] ?? '') as String,
+      name: _firstNonEmptyField([
+            row['name'],
+            row['full_name'],
+            row['display_name'],
+          ]) ??
+          '',
+      phone: row['phone'] as String?,
+      avatarUrl: (row['avatar_url'] ?? row['avatarUrl']) as String?,
+      createdAt: createdAt,
     );
   }
 
-  /// تحويل إلى JSON
+  /// تحويل إلى JSON (مناسب للـ client-side مؤقتاً)
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'email': email,
       'name': name,
       'phone': phone,
       'avatarUrl': avatarUrl,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 

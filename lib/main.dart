@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:pearant_app/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Firebase
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'app_locale.dart';
 
 // استيراد جميع الشاشات
 import 'screens/splash_screen.dart';
@@ -23,15 +24,23 @@ import 'screens/add_child_screen.dart';
 import 'screens/parental_controls_screen.dart';
 import 'screens/ai_reports_screen.dart';
 import 'screens/child_activity_detail_screen.dart';
+import 'screens/behavior_goals_screen.dart';
+
+const String supabaseUrl =
+    'https://nrtqvyhyjpgxhfdpycxm.supabase.co';
+const String supabaseAnonKey =
+    'sb_publishable_LgCDbxhRXf4oGtlGMDqocg_QBN9felU';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تهيئة Firebase بالطريقة الصحيحة باستخدام firebase_options.dart
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  // Initialize Supabase for authentication/profile handling.
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
 
+  await AppLocale.loadSavedLocale();
   runApp(const AlFaseelahParentApp());
 }
 
@@ -40,45 +49,60 @@ class AlFaseelahParentApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'عالم الفسيلة',
-      debugShowCheckedModeBanner: false,
+    return ValueListenableBuilder<Locale>(
+      valueListenable: AppLocale.notifier,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.app_title,
+          debugShowCheckedModeBanner: false,
 
-      // دعم اللغة العربية
-      locale: const Locale('ar', 'SA'),
-      supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+          // دعم اللغة العربية والإنجليزية
+          locale: locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          localeResolutionCallback: (deviceLocale, supportedLocales) {
+            for (var supportedLocale in supportedLocales) {
+              if (supportedLocale.languageCode == deviceLocale?.languageCode) {
+                return supportedLocale;
+              }
+            }
+            return supportedLocales.first;
+          },
 
-      // استخدام الثيم الفاتح فقط
-      theme: _buildLightTheme(),
-      darkTheme: _buildLightTheme(),
-      themeMode: ThemeMode.light,
+          // استخدام الثيم الفاتح فقط
+          theme: _buildLightTheme(),
+          darkTheme: _buildLightTheme(),
+          themeMode: ThemeMode.light,
 
-      // ✅ رجّعنا التطبيق يفتح على SplashScreen
-      home: const SplashScreen(),
+          // ✅ رجّعنا التطبيق يفتح على SplashScreen
+          home: const SplashScreen(),
 
-      // جميع المسارات
-      routes: {
-        '/splash': (context) => const SplashScreen(),
-        '/onboarding': (context) => const OnboardingScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/child-profile': (context) => const ChildProfileScreen(),
-        '/progress': (context) => const ProgressScreen(),
-        '/connection': (context) => const ConnectionScreen(),
-        '/library': (context) => const ContentLibraryScreen(),
-        '/settings': (context) => const SettingsScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
-        '/add-child': (context) => const AddChildScreen(),
-        '/parental-controls': (context) => const ParentalControlsScreen(),
-        '/ai-reports': (context) => const AIReportsScreen(),
-        '/activity-detail': (context) => const ChildActivityDetailScreen(),
+          // جميع المسارات
+          routes: {
+            '/splash': (context) => const SplashScreen(),
+            '/onboarding': (context) => const OnboardingScreen(),
+            '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
+            '/forgot-password': (context) => const ForgotPasswordScreen(),
+            '/home': (context) => const HomeScreen(),
+            '/child-profile': (context) => const ChildProfileScreen(),
+            '/progress': (context) => const ProgressScreen(),
+            '/connection': (context) => const ConnectionScreen(),
+            '/library': (context) => const ContentLibraryScreen(),
+            '/settings': (context) => const SettingsScreen(),
+            '/notifications': (context) => const NotificationsScreen(),
+            '/add-child': (context) => const AddChildScreen(),
+            '/parental-controls': (context) => const ParentalControlsScreen(),
+            '/ai-reports': (context) => const AIReportsScreen(),
+            '/activity-detail': (context) => const ChildActivityDetailScreen(),
+            '/behavior-goals': (context) => const BehaviorGoalsScreen(),
+          },
+        );
       },
     );
   }
@@ -86,7 +110,7 @@ class AlFaseelahParentApp extends StatelessWidget {
   // الثيم الفاتح - الألوان الأصلية
   ThemeData _buildLightTheme() {
     final textTheme = GoogleFonts.tajawalTextTheme();
-    
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,

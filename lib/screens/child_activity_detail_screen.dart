@@ -1,98 +1,167 @@
 import 'package:flutter/material.dart';
-import '../utils/constants.dart';
-import '../widgets/custom_card.dart';
+
+import '../models/session_model.dart' as models;
+import '../services/child_service.dart';
+import '../utils/app_strings.dart';
 
 /// شاشة تفاصيل نشاط الطفل
-class ChildActivityDetailScreen extends StatelessWidget {
-  final String?  sessionId;
+class ChildActivityDetailScreen extends StatefulWidget {
+  final String? sessionId;
 
   const ChildActivityDetailScreen({super.key, this.sessionId});
 
   @override
+  State<ChildActivityDetailScreen> createState() => _ChildActivityDetailScreenState();
+}
+
+class _ChildActivityDetailScreenState extends State<ChildActivityDetailScreen> {
+  final ChildService _childService = ChildService();
+  models.Session? _session;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSession();
+    });
+  }
+
+  Future<void> _loadSession() async {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    String? sessionId = widget.sessionId;
+    String? childId;
+    if (args is Map) {
+      sessionId = (args['sessionId'] as String?) ?? sessionId;
+      childId = args['childId'] as String?;
+    }
+
+    models.Session? s;
+    if (sessionId != null && sessionId.isNotEmpty) {
+      s = await _childService.getSessionById(sessionId);
+    } else if (childId != null && childId.isNotEmpty) {
+      final sessions = await _childService.getChildSessions(childId);
+      if (sessions.isNotEmpty) s = sessions.first;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _session = s;
+      _isLoading = false;
+    });
+  }
+
+  String _dateLabel(DateTime dt) {
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} $hh:$mm';
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:  AppBar(
-        title: const Text('تفاصيل الجلسة'),
+      appBar: AppBar(
+        title: Text(AppStrings.tr(context, 'تفاصيل الجلسة', 'Session details')),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('جاري مشاركة التقرير.. .')),
+                SnackBar(
+                  content: Text(
+                    AppStrings.tr(
+                      context,
+                      'جاري مشاركة التقرير...',
+                      'Sharing report...',
+                    ),
+                  ),
+                ),
               );
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSessionHeader(context),
-            const SizedBox(height: 24),
-            _buildZonesVisited(context),
-            const SizedBox(height: 24),
-            _buildCompletedActivities(context),
-            const SizedBox(height:  24),
-            _buildBehaviorAnalysis(context),
-            const SizedBox(height: 24),
-            _buildAIInsights(context),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _session == null
+              ? Center(
+                  child: Text(
+                    AppStrings.tr(
+                      context,
+                      'لا توجد بيانات جلسة متاحة',
+                      'No session data available',
+                    ),
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSessionHeader(context),
+                      const SizedBox(height: 24),
+                      _buildZonesVisited(context),
+                      const SizedBox(height: 24),
+                      _buildCompletedActivities(context),
+                      const SizedBox(height: 24),
+                      _buildBehaviorAnalysis(context),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
     );
   }
 
   Widget _buildSessionHeader(BuildContext context) {
-    return GradientCard(
+    final s = _session!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF87CEEB), Color(0xFF90EE90)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.transparent,
-                  child: Text('👧', style: TextStyle(fontSize: 32)),
-                ),
+              const CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.history, color: Colors.white, size: 28),
               ),
-              const SizedBox(width:  16),
-              const Expanded(
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'سارة',
-                      style: TextStyle(
-                        fontSize: 24,
+                      _dateLabel(s.startTime),
+                      style: const TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                     Text(
-                      'اليوم - 4: 30 مساءً',
-                      style: TextStyle(color: Colors.white70),
+                      AppStrings.tr(context, 'سجل جلسة حقيقي', 'Real session record'),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white24,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child:  const Text(
-                  '45 دقيقة',
-                  style: TextStyle(
+                child: Text(
+                  AppStrings.tr(context, '${s.totalMinutes} دقيقة', '${s.totalMinutes} min'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
@@ -100,13 +169,25 @@ class ChildActivityDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildHeaderStat('🎯', '5', 'أنشطة'),
-              _buildHeaderStat('⭐', '3', 'نجوم'),
-              _buildHeaderStat('📍', '3', 'مناطق'),
+              _buildHeaderStat(
+                '🎯',
+                '${s.activities.length}',
+                AppStrings.tr(context, 'أنشطة', 'Activities'),
+              ),
+              _buildHeaderStat(
+                '⭐',
+                '${s.starsEarned}',
+                AppStrings.tr(context, 'نجوم', 'Stars'),
+              ),
+              _buildHeaderStat(
+                '📍',
+                '${s.zonesVisited.length}',
+                AppStrings.tr(context, 'مناطق', 'Zones'),
+              ),
             ],
           ),
         ],
@@ -136,84 +217,70 @@ class ChildActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildZonesVisited(BuildContext context) {
-    final zones = [
-      {'name':  'المنزل', 'icon': Icons.home, 'time': '15 دقيقة', 'color': AppColors.skyBlue},
-      {'name':  'المدرسة', 'icon': Icons.school, 'time': '20 دقيقة', 'color': AppColors.lightGreen},
-      {'name':  'المسجد', 'icon':  Icons.mosque, 'time': '10 دقيقة', 'color': AppColors.orange},
-    ];
+    final zones = _session!.zonesVisited.entries.toList();
+    if (zones.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(AppStrings.tr(context, 'لا توجد مناطق مسجلة', 'No visited zones')),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'المناطق التي زارها',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          AppStrings.tr(context, 'المناطق التي زارها', 'Visited zones'),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height:  12),
-        Row(
-          children: zones.map((zone) {
-            return Expanded(
-              child: Card(
-                child:  Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: (zone['color'] as Color).withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          zone['icon'] as IconData,
-                          color: zone['color'] as Color,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        zone['name'] as String,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        zone['time'] as String,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
+        const SizedBox(height: 12),
+        ...zones.map((zone) {
+          return Card(
+            child: ListTile(
+              leading: const Icon(Icons.place, color: Color(0xFF87CEEB)),
+              title: Text(zone.key),
+              trailing: Text(
+                AppStrings.tr(context, '${zone.value} نشاط', '${zone.value} activities'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }),
       ],
     );
   }
 
   Widget _buildCompletedActivities(BuildContext context) {
-    final activities = [
-      {'title': 'قصة الأرنب الصغير', 'type': 'قصة', 'result': 'مكتمل', 'icon': Icons.auto_stories},
-      {'title':  'تعلم الألوان', 'type': 'نشاط تعليمي', 'result': 'نجمتان', 'icon': Icons. palette},
-      {'title': 'سورة الفاتحة', 'type': 'تعليم ديني', 'result': 'مكتمل', 'icon': Icons. mosque},
-      {'title': 'الأرقام من 1-10', 'type': 'حساب', 'result': 'نجمة واحدة', 'icon':  Icons.calculate},
-      {'title': 'تنظيف الغرفة', 'type': 'مهارة يومية', 'result': 'مكتمل', 'icon': Icons.cleaning_services},
-    ];
+    final activities = _session!.activities;
+    if (activities.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(AppStrings.tr(context, 'لا توجد أنشطة في هذه الجلسة', 'No activities in this session')),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'الأنشطة المكتملة',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          AppStrings.tr(context, 'الأنشطة المكتملة', 'Completed activities'),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        ... activities.map((activity) {
-          return ActivityCard(
-            icon: activity['icon'] as IconData,
-            title: activity['title'] as String,
-            subtitle: activity['type'] as String,
-            trailing: activity['result'] as String,
-            color: AppColors.skyBlue,
+        ...activities.map((activity) {
+          final stars = activity.starsEarned > 0
+              ? AppStrings.tr(context, '${activity.starsEarned} نجوم', '${activity.starsEarned} stars')
+              : AppStrings.tr(context, 'مكتمل', 'Done');
+          return Card(
+            child: ListTile(
+              leading: const Icon(Icons.task_alt, color: Color(0xFF87CEEB)),
+              title: Text(activity.title),
+              subtitle: Text(activity.type),
+              trailing: Text(stars),
+            ),
           );
         }),
       ],
@@ -221,6 +288,7 @@ class ChildActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildBehaviorAnalysis(BuildContext context) {
+    final s = _session!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -232,23 +300,43 @@ class ChildActivityDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.purple.withOpacity(0.15),
+                    color: const Color(0xFFBA68C8).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.psychology, color: AppColors. purple),
+                  child: const Icon(Icons.psychology, color: Color(0xFFBA68C8)),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'تحليل السلوك',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppStrings.tr(context, 'تحليل السلوك', 'Behavior analysis'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            _buildBehaviorItem('المزاج العام', 'سعيد ومتحمس', '😊', AppColors.orange),
-            _buildBehaviorItem('مستوى التركيز', 'عالي جداً', '🎯', AppColors.lightGreen),
-            _buildBehaviorItem('سرعة الاستجابة', 'سريعة', '⚡', AppColors.skyBlue),
-            _buildBehaviorItem('التفاعل مع الأنشطة', 'ممتاز', '🌟', AppColors.purple),
+            _buildBehaviorItem(
+              AppStrings.tr(context, 'المزاج العام', 'Mood'),
+              s.mood.isNotEmpty ? s.mood : '-',
+              '😊',
+              const Color(0xFFFFB74D),
+            ),
+            _buildBehaviorItem(
+              AppStrings.tr(context, 'مستوى التركيز', 'Focus level'),
+              s.focusLevel.isNotEmpty ? s.focusLevel : '-',
+              '🎯',
+              const Color(0xFF90EE90),
+            ),
+            _buildBehaviorItem(
+              AppStrings.tr(context, 'الوقت الكلي', 'Total time'),
+              AppStrings.tr(context, '${s.totalMinutes} دقيقة', '${s.totalMinutes} min'),
+              '⏱️',
+              const Color(0xFF87CEEB),
+            ),
+            _buildBehaviorItem(
+              AppStrings.tr(context, 'إجمالي النجوم', 'Total stars'),
+              '${s.starsEarned}',
+              '⭐',
+              const Color(0xFFBA68C8),
+            ),
           ],
         ),
       ),
@@ -275,7 +363,7 @@ class ChildActivityDetailScreen extends StatelessWidget {
               value,
               style: TextStyle(
                 color: color,
-                fontWeight: FontWeight. w500,
+                fontWeight: FontWeight.w500,
                 fontSize: 13,
               ),
             ),
@@ -285,86 +373,5 @@ class ChildActivityDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAIInsights(BuildContext context) {
-    return Card(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors:  [
-              AppColors.lightGreen.withOpacity(0.1),
-              AppColors. skyBlue.withOpacity(0.1),
-            ],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.orange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: AppColors.orange),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'رؤى الذكاء الاصطناعي',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius. circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '💡 ملاحظات اليوم: ',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• سارة أظهرت اهتماماً كبيراً بالقصص اليوم\n'
-                        '• تحسن ملحوظ في التعرف على الألوان\n'
-                        '• تفاعلت بشكل إيجابي مع الأنشطة الدينية',
-                    style: TextStyle(color: Colors.grey[700], height: 1.5),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.skyBlue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child:  Row(
-                children: [
-                  const Icon(Icons.lightbulb, color: AppColors.orange),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'اقتراح:  جربي نشاط "عالم الحيوانات" غداً، سارة ستحبه!',
-                      style: TextStyle(color: Colors.grey[700]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Removed hardcoded AI demo insights to keep session details truthful.
 }

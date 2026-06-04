@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/app_strings.dart';
+
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -11,43 +13,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingItem> _items = [
-    OnboardingItem(
-      title: 'مرحباً بك في عالم الفسيلة',
-      description: 'تجربة تعليمية فريدة تجمع بين اللعب الملموس والذكاء الاصطناعي لتنمية مهارات طفلك',
-      icon: Icons.spa,
-      color: const Color(0xFF87CEEB),
-      image: 'assets/images/onboarding1.png',
-    ),
-    OnboardingItem(
-      title: 'تعلم من خلال اللعب',
-      description: 'أربع مناطق تعليمية:  المنزل، المدرسة، المسجد، ومنطقة متغيرة تتيح لطفلك استكشاف عوالم جديدة',
-      icon: Icons.toys,
-      color: const Color(0xFF90EE90),
-      image: 'assets/images/onboarding2.png',
-    ),
-    OnboardingItem(
-      title: 'ذكاء اصطناعي متطور',
-      description: 'يتعرف على طفلك ويتكيف مع احتياجاته، يقدم محتوى مخصص ويتابع تقدمه بشكل مستمر',
-      icon: Icons. psychology,
-      color: const Color(0xFFFFB74D),
-      image: 'assets/images/onboarding3.png',
-    ),
-    OnboardingItem(
-      title: 'تقارير ذكية للأهل',
-      description: 'تابعي تقدم طفلك واحصلي على تقارير مفصلة وتوصيات مخصصة من الذكاء الاصطناعي',
-      icon: Icons.assessment,
-      color: const Color(0xFFBA68C8),
-      image: 'assets/images/onboarding4.png',
-    ),
-    OnboardingItem(
-      title: 'تحكم أبوي كامل',
-      description: 'تحكمي في المحتوى، حددي وقت الاستخدام، واختاري المسار التعليمي المناسب لطفلك',
-      icon: Icons.shield,
-      color: const Color(0xFF4DD0E1),
-      image: 'assets/images/onboarding5.png',
-    ),
-  ];
+  List<OnboardingItem> _items(BuildContext context) => [
+        OnboardingItem(
+          title: AppStrings.onboardingTitle0(context),
+          description: AppStrings.onboardingDesc0(context),
+          icon: Icons.spa,
+          color: const Color(0xFF87CEEB),
+          image: 'assets/images/onboarding1.png',
+        ),
+        OnboardingItem(
+          title: AppStrings.onboardingTitle1(context),
+          description: AppStrings.onboardingDesc1(context),
+          icon: Icons.toys,
+          color: const Color(0xFF90EE90),
+          image: 'assets/images/onboarding2.png',
+        ),
+        OnboardingItem(
+          title: AppStrings.onboardingTitle2(context),
+          description: AppStrings.onboardingDesc2(context),
+          icon: Icons.psychology,
+          color: const Color(0xFFFFB74D),
+          image: 'assets/images/onboarding3.png',
+        ),
+        OnboardingItem(
+          title: AppStrings.onboardingTitle3(context),
+          description: AppStrings.onboardingDesc3(context),
+          icon: Icons.assessment,
+          color: const Color(0xFFBA68C8),
+          image: 'assets/images/onboarding4.png',
+        ),
+        OnboardingItem(
+          title: AppStrings.onboardingTitle4(context),
+          description: AppStrings.onboardingDesc4(context),
+          icon: Icons.shield,
+          color: const Color(0xFF4DD0E1),
+          image: 'assets/images/onboarding5.png',
+        ),
+      ];
 
   @override
   void dispose() {
@@ -56,9 +58,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < _items.length - 1) {
+    final items = _items(context);
+    if (_currentPage < items.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds:  300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
@@ -69,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _previousPage() {
     if (_currentPage > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds:  300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
@@ -81,34 +84,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final items = _items(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // زر التخطي
             _buildSkipButton(),
-
-            // محتوى الصفحات
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                itemCount: _items.length,
+                itemCount: items.length,
                 onPageChanged: (index) {
                   setState(() {
                     _currentPage = index;
                   });
                 },
                 itemBuilder: (context, index) {
-                  return _buildPage(_items[index]);
+                  return _buildPage(items[index]);
                 },
               ),
             ),
-
-            // مؤشرات الصفحات
-            _buildPageIndicators(),
-
-            // أزرار التنقل
-            _buildNavigationButtons(),
+            _buildPageIndicators(items),
+            _buildNavigationButtons(items),
           ],
         ),
       ),
@@ -117,13 +114,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildSkipButton() {
     return Align(
-      alignment: Alignment. topLeft,
-      child:  Padding(
+      alignment: Alignment.topLeft,
+      child: Padding(
         padding: const EdgeInsets.all(16),
         child: TextButton(
           onPressed: _navigateToLogin,
-          child:  Text(
-            'تخطي',
+          child: Text(
+            AppStrings.onboardingSkip(context),
             style: TextStyle(
               color: Colors.grey[600],
               fontSize: 16,
@@ -138,13 +135,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment. center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // الأيقونة مع تأثير متحرك
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
             duration: const Duration(milliseconds: 500),
-            builder:  (context, value, child) {
+            builder: (context, value, child) {
               return Transform.scale(
                 scale: value,
                 child: child,
@@ -153,7 +149,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Container(
               padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
-                color: item.color. withOpacity(0.15),
+                color: item.color.withOpacity(0.15),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -170,9 +166,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
           ),
-          const SizedBox(height:  48),
-
-          // العنوان
+          const SizedBox(height: 48),
           Text(
             item.title,
             style: const TextStyle(
@@ -181,9 +175,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height:  16),
-
-          // الوصف
+          const SizedBox(height: 16),
           Text(
             item.description,
             style: TextStyle(
@@ -198,21 +190,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPageIndicators() {
+  Widget _buildPageIndicators(List<OnboardingItem> items) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
-          _items. length,
-              (index) => AnimatedContainer(
+          items.length,
+          (index) => AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.symmetric(horizontal: 4),
             width: _currentPage == index ? 32 : 8,
             height: 8,
-            decoration:  BoxDecoration(
+            decoration: BoxDecoration(
               color: _currentPage == index
-                  ? _items[_currentPage].color
+                  ? items[_currentPage].color
                   : Colors.grey[300],
               borderRadius: BorderRadius.circular(4),
             ),
@@ -222,46 +214,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildNavigationButtons() {
+  Widget _buildNavigationButtons(List<OnboardingItem> items) {
     return Padding(
-      padding: const EdgeInsets. all(24),
+      padding: const EdgeInsets.all(24),
       child: Row(
         children: [
-          // زر السابق
           if (_currentPage > 0)
             Expanded(
-              child:  OutlinedButton(
+              child: OutlinedButton(
                 onPressed: _previousPage,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: _items[_currentPage].color),
+                  side: BorderSide(color: items[_currentPage].color),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment:  MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.arrow_forward, color: _items[_currentPage]. color),
+                    Icon(Icons.arrow_forward, color: items[_currentPage].color),
                     const SizedBox(width: 8),
                     Text(
-                      'السابق',
-                      style: TextStyle(color: _items[_currentPage]. color),
+                      AppStrings.onboardingPrev(context),
+                      style: TextStyle(color: items[_currentPage].color),
                     ),
                   ],
                 ),
               ),
             ),
-
           if (_currentPage > 0) const SizedBox(width: 16),
-
-          // زر التالي
           Expanded(
             flex: _currentPage == 0 ? 1 : 1,
             child: ElevatedButton(
               onPressed: _nextPage,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _items[_currentPage]. color,
+                backgroundColor: items[_currentPage].color,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -271,15 +259,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    _currentPage == _items.length - 1 ?  'ابدأ الآن' : 'التالي',
+                    _currentPage == items.length - 1
+                        ? AppStrings.onboardingStart(context)
+                        : AppStrings.onboardingNext(context),
                     style: const TextStyle(fontSize: 16, color: Colors.white),
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    _currentPage == _items.length - 1
+                    _currentPage == items.length - 1
                         ? Icons.login
                         : Icons.arrow_back,
-                    color: Colors. white,
+                    color: Colors.white,
                   ),
                 ],
               ),
@@ -301,7 +291,7 @@ class OnboardingItem {
   OnboardingItem({
     required this.title,
     required this.description,
-    required this. icon,
+    required this.icon,
     required this.color,
     required this.image,
   });

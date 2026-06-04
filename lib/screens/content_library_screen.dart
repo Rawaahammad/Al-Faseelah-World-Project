@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../models/content_pack_model.dart';
+import '../services/content_service.dart';
+import '../utils/app_strings.dart';
+
 class ContentLibraryScreen extends StatefulWidget {
   const ContentLibraryScreen({super.key});
 
@@ -12,6 +16,10 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
   String _selectedCategory = 'الكل';
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  final ContentService _contentService = ContentService();
+
+  List<ContentPack> _contentPacks = [];
+  bool _isLoading = true;
 
   final List<String> _categories = [
     'الكل',
@@ -23,144 +31,62 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
     'ديني'
   ];
 
-  final List<Map<String, dynamic>> _contentItems = [
-    {
-      'id': '1',
-      'title': 'قصة الأرنب الصغير',
-      'category': 'قصص',
-      'duration': '10 دقائق',
-      'age': '3-5 سنوات',
-      'rating': 4.8,
-      'reviews': 156,
-      'isDownloaded': true,
-      'isNew': false,
-      'color': const Color(0xFF87CEEB),
-      'icon': Icons.auto_stories,
-      'description':  'قصة ممتعة عن أرنب صغير يتعلم قيمة الصداقة والمشاركة',
-    },
-    {
-      'id': '2',
-      'title': 'تعلم الأرقام',
-      'category': 'تعليمي',
-      'duration': '15 دقيقة',
-      'age':  '4-6 سنوات',
-      'rating': 4.5,
-      'reviews': 203,
-      'isDownloaded': true,
-      'isNew': false,
-      'color': const Color(0xFF90EE90),
-      'icon': Icons.calculate,
-      'description': 'نشاط تفاعلي لتعلم الأرقام من 1 إلى 10 بطريقة ممتعة',
-    },
-    {
-      'id': '3',
-      'title': 'لعبة المزارع',
-      'category': 'ألعاب',
-      'duration': '20 دقيقة',
-      'age': '5-7 سنوات',
-      'rating': 4.9,
-      'reviews': 89,
-      'isDownloaded': false,
-      'isNew': true,
-      'color':  const Color(0xFFFFB74D),
-      'icon': Icons.agriculture,
-      'description': 'ساعد المزارع في زراعة الخضروات والعناية بالحيوانات',
-    },
-    {
-      'id':  '4',
-      'title':  'مساعدة الآخرين',
-      'category':  'تربوي',
-      'duration': '12 دقيقة',
-      'age': '3-6 سنوات',
-      'rating': 4.7,
-      'reviews': 134,
-      'isDownloaded': true,
-      'isNew': false,
-      'color':  const Color(0xFFBA68C8),
-      'icon': Icons.volunteer_activism,
-      'description': 'تعلم قيمة مساعدة الآخرين من خلال مواقف يومية',
-    },
-    {
-      'id': '5',
-      'title': 'أشكال الحيوانات',
-      'category': 'أنشطة',
-      'duration': '8 دقائق',
-      'age': '3-5 سنوات',
-      'rating': 4.6,
-      'reviews': 178,
-      'isDownloaded': false,
-      'isNew': false,
-      'color': const Color(0xFF4DD0E1),
-      'icon': Icons.pets,
-      'description': 'تعرف على الحيوانات وأصواتها بطريقة تفاعلية',
-    },
-    {
-      'id': '6',
-      'title': 'سورة الفاتحة',
-      'category': 'ديني',
-      'duration':  '10 دقائق',
-      'age': '4-7 سنوات',
-      'rating': 4.9,
-      'reviews': 312,
-      'isDownloaded': true,
-      'isNew': false,
-      'color':  const Color(0xFF81C784),
-      'icon': Icons.menu_book,
-      'description': 'تعلم سورة الفاتحة مع التجويد بطريقة سهلة وممتعة',
-    },
-    {
-      'id':  '7',
-      'title':  'الألوان السحرية',
-      'category':  'أنشطة',
-      'duration': '15 دقيقة',
-      'age':  '3-5 سنوات',
-      'rating': 4.4,
-      'reviews': 98,
-      'isDownloaded': false,
-      'isNew': true,
-      'color':  const Color(0xFFFF8A65),
-      'icon': Icons.palette,
-      'description': 'اكتشف عالم الألوان وتعلم مزجها',
-    },
-    {
-      'id': '8',
-      'title': 'آداب الطعام',
-      'category': 'تربوي',
-      'duration': '8 دقائق',
-      'age': '3-6 سنوات',
-      'rating': 4.6,
-      'reviews': 145,
-      'isDownloaded': true,
-      'isNew': false,
-      'color':  const Color(0xFF9575CD),
-      'icon': Icons.restaurant,
-      'description': 'تعلم آداب الطعام الإسلامية بأسلوب شيق',
-    },
-  ];
+  static const Map<String, IconData> _categoryIcons = {
+    'قصص': Icons.auto_stories,
+    'أنشطة': Icons.palette,
+    'ألعاب': Icons.sports_esports,
+    'تعليمي': Icons.school,
+    'تربوي': Icons.volunteer_activism,
+    'ديني': Icons.menu_book,
+  };
 
-  List<Map<String, dynamic>> get _filteredItems {
-    var items = _contentItems;
+  static const Map<String, Color> _categoryColors = {
+    'قصص': Color(0xFF87CEEB),
+    'أنشطة': Color(0xFF4DD0E1),
+    'ألعاب': Color(0xFFFFB74D),
+    'تعليمي': Color(0xFF90EE90),
+    'تربوي': Color(0xFFBA68C8),
+    'ديني': Color(0xFF81C784),
+  };
+
+  List<ContentPack> get _filteredItems {
+    var items = _contentPacks;
 
     if (_selectedCategory != 'الكل') {
-      items = items.where((item) => item['category'] == _selectedCategory).toList();
+      items = items.where((item) => item.category == _selectedCategory).toList();
     }
 
     if (_searchController.text.isNotEmpty) {
       items = items
-          .where((item) => item['title']
-          .toString()
-          .toLowerCase()
-          .contains(_searchController.text. toLowerCase()))
+          .where((item) => item.title
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase()))
           .toList();
     }
 
     return items;
   }
 
+  List<ContentPack> get _downloadedItems {
+    return _contentPacks.where((item) => item.isOfflineAvailable).toList();
+  }
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync:  this);
+    _tabController = TabController(length: 2, vsync: this);
+    _loadContent();
+  }
+
+  Future<void> _loadContent() async {
+    await _contentService.seedInitialContent();
+    final packs = await _contentService.getContentPacks();
+    if (mounted) {
+      setState(() {
+        _contentPacks = packs;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -170,11 +96,19 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
     super.dispose();
   }
 
+  IconData _getIconForCategory(String category) {
+    return _categoryIcons[category] ?? Icons.article;
+  }
+
+  Color _getColorForCategory(String category) {
+    return _categoryColors[category] ?? const Color(0xFF87CEEB);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مكتبة المحتوى'),
+        title: Text(AppStrings.contentLibraryTitle(context)),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -183,14 +117,14 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
           unselectedLabelColor: Colors.white70,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           unselectedLabelStyle: const TextStyle(fontSize: 13),
-          tabs: const [
+          tabs: [
             Tab(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.explore, size: 20),
-                  SizedBox(width: 8),
-                  Text('استكشاف'),
+                  const Icon(Icons.explore, size: 20),
+                  const SizedBox(width: 8),
+                  Text(AppStrings.contentTabExplore(context)),
                 ],
               ),
             ),
@@ -198,29 +132,30 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.download_done, size: 20),
-                  SizedBox(width: 8),
-                  Text('المحفوظات'),
+                  const Icon(Icons.download_done, size: 20),
+                  const SizedBox(width: 8),
+                  Text(AppStrings.contentTabSaved(context)),
                 ],
               ),
             ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildExploreTab(),
-          _buildDownloadedTab(),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildExploreTab(),
+                _buildDownloadedTab(),
+              ],
+            ),
     );
   }
 
   Widget _buildExploreTab() {
     return Column(
       children: [
-        // شريط البحث والفلاتر
         Container(
           padding: const EdgeInsets.all(16),
           color: Colors.white,
@@ -229,48 +164,49 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
               TextField(
                 controller: _searchController,
                 onChanged: (value) => setState(() {}),
-                decoration:  InputDecoration(
-                  hintText: 'ابحث في المحتوى...',
+                decoration: InputDecoration(
+                  hintText: AppStrings.contentSearchHint(context),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {});
-                    },
-                  )
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
                       : null,
                 ),
               ),
-              const SizedBox(height:  12),
+              const SizedBox(height: 12),
               SizedBox(
                 height: 40,
                 child: ListView.builder(
-                  scrollDirection:  Axis.horizontal,
+                  scrollDirection: Axis.horizontal,
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
                     final category = _categories[index];
                     final isSelected = category == _selectedCategory;
                     return Padding(
-                      padding:  const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.only(left: 8),
                       child: FilterChip(
-                        selected:  isSelected,
-                        label:  Text(category),
+                        selected: isSelected,
+                        label: Text(AppStrings.contentCategoryLabel(
+                            context, category)),
                         onSelected: (selected) {
                           setState(() {
                             _selectedCategory = category;
                           });
                         },
                         selectedColor:
-                        Theme.of(context).colorScheme.primary. withOpacity(0.2),
+                            Theme.of(context).colorScheme.primary.withOpacity(0.2),
                         checkmarkColor: Theme.of(context).colorScheme.primary,
                         labelStyle: TextStyle(
                           color: isSelected
                               ? Theme.of(context).colorScheme.primary
                               : Colors.grey[700],
                           fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     );
@@ -280,27 +216,23 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
             ],
           ),
         ),
-        // قائمة المحتوى
         Expanded(
-          child:  _filteredItems.isEmpty
-              ?  _buildEmptyState()
+          child: _filteredItems.isEmpty
+              ? _buildEmptyState()
               : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount:  _filteredItems.length,
-            itemBuilder: (context, index) {
-              return _buildContentCard(_filteredItems[index]);
-            },
-          ),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _filteredItems.length,
+                  itemBuilder: (context, index) {
+                    return _buildContentCard(_filteredItems[index]);
+                  },
+                ),
         ),
       ],
     );
   }
 
   Widget _buildDownloadedTab() {
-    final downloadedItems =
-    _contentItems.where((item) => item['isDownloaded'] == true).toList();
-
-    if (downloadedItems.isEmpty) {
+    if (_downloadedItems.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -308,12 +240,12 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
             Icon(Icons.download_outlined, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'لا يوجد محتوى محفوظ',
+              AppStrings.contentEmptySavedTitle(context),
               style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
-              'قم بتحميل المحتوى للوصول إليه بدون إنترنت',
+              AppStrings.contentEmptySavedSubtitle(context),
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
@@ -322,10 +254,10 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets. all(16),
-      itemCount: downloadedItems.length,
+      padding: const EdgeInsets.all(16),
+      itemCount: _downloadedItems.length,
       itemBuilder: (context, index) {
-        return _buildContentCard(downloadedItems[index], showDownloadButton: false);
+        return _buildContentCard(_downloadedItems[index], showDownloadButton: false);
       },
     );
   }
@@ -338,12 +270,12 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
           Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            'لا توجد نتائج',
-            style:  TextStyle(fontSize: 18, color: Colors.grey[600]),
+            AppStrings.contentEmptySearchTitle(context),
+            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
-            'جرب البحث بكلمات مختلفة',
+            AppStrings.contentEmptySearchSubtitle(context),
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
@@ -351,48 +283,44 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
     );
   }
 
-  Widget _buildContentCard(Map<String, dynamic> item,
-      {bool showDownloadButton = true}) {
+  Widget _buildContentCard(ContentPack pack, {bool showDownloadButton = true}) {
+    final color = _getColorForCategory(pack.category);
+    final icon = _getIconForCategory(pack.category);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
-        onTap: () => _showContentDetails(item),
+        onTap: () => _showContentDetails(pack),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // أيقونة المحتوى
               Stack(
                 children: [
                   Container(
-                    width:  70,
+                    width: 70,
                     height: 70,
                     decoration: BoxDecoration(
-                      color: (item['color'] as Color).withOpacity(0.15),
+                      color: color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      item['icon'] as IconData,
-                      size: 35,
-                      color: item['color'] as Color,
-                    ),
+                    child: Icon(icon, size: 35, color: color),
                   ),
-                  if (item['isNew'] == true)
+                  if (pack.isNew)
                     Positioned(
                       top: -4,
                       right: -4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color:  Colors.red,
+                          color: Colors.red,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'جديد',
-                          style:  TextStyle(
+                        child: Text(
+                          AppStrings.contentBadgeNew(context),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -403,13 +331,12 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                 ],
               ),
               const SizedBox(width: 16),
-              // معلومات المحتوى
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['title'],
+                      pack.title,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -419,17 +346,17 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: (item['color'] as Color).withOpacity(0.1),
-                            borderRadius: BorderRadius. circular(8),
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            item['category'],
+                            AppStrings.contentCategoryLabel(
+                                context, pack.category),
                             style: TextStyle(
                               fontSize: 11,
-                              color: item['color'] as Color,
+                              color: color,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -438,11 +365,9 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                         Icon(Icons.timer, size: 14, color: Colors.grey[500]),
                         const SizedBox(width: 4),
                         Text(
-                          item['duration'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors. grey[500],
-                          ),
+                          AppStrings.contentMinutesShort(
+                              context, pack.durationMinutes),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                         ),
                       ],
                     ),
@@ -452,74 +377,38 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                         Icon(Icons.child_care, size: 14, color: Colors.grey[500]),
                         const SizedBox(width: 4),
                         Text(
-                          item['age'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors. grey[500],
-                          ),
+                          AppStrings.contentAgeRangeDisplay(
+                              context, pack.ageRange),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                         ),
                         const SizedBox(width: 12),
                         const Icon(Icons.star, size: 14, color: Color(0xFFFFB74D)),
                         const SizedBox(width: 4),
                         Text(
-                          '${item['rating']}',
-                          style: const TextStyle(
-                            fontSize:  12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          '${pack.rating}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                         ),
                         Text(
-                          ' (${item['reviews']})',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors. grey[500],
-                          ),
+                          ' (${pack.reviewsCount})',
+                          style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              // زر التحميل/التشغيل
               if (showDownloadButton)
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      item['isDownloaded'] = !item['isDownloaded'];
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          item['isDownloaded']
-                              ? 'تم تحميل ${item['title']}'
-                              : 'تم حذف ${item['title']}',
-                        ),
-                        action: SnackBarAction(
-                          label: 'تراجع',
-                          onPressed: () {
-                            setState(() {
-                              item['isDownloaded'] = !item['isDownloaded'];
-                            });
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    item['isDownloaded']
-                        ? Icons.download_done
-                        : Icons.download_outlined,
-                    color: item['isDownloaded']
-                        ? const Color(0xFF90EE90)
-                        :  Colors.grey,
-                  ),
+                Icon(
+                  pack.isOfflineAvailable
+                      ? Icons.download_done
+                      : Icons.download_outlined,
+                  color: pack.isOfflineAvailable
+                      ? const Color(0xFF90EE90)
+                      : Colors.grey,
                 )
               else
-                IconButton(
-                  onPressed: () => _showContentDetails(item),
-                  icon: const Icon(Icons.play_circle_filled,
-                      color: Color(0xFF87CEEB), size: 32),
-                ),
+                const Icon(Icons.play_circle_filled,
+                    color: Color(0xFF87CEEB), size: 32),
             ],
           ),
         ),
@@ -527,9 +416,12 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
     );
   }
 
-  void _showContentDetails(Map<String, dynamic> item) {
+  void _showContentDetails(ContentPack pack) {
+    final color = _getColorForCategory(pack.category);
+    final icon = _getIconForCategory(pack.category);
+
     showModalBottomSheet(
-      context:  context,
+      context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -542,13 +434,12 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
           expand: false,
           builder: (context, scrollController) {
             return SingleChildScrollView(
-              controller:  scrollController,
-              child:  Padding(
+              controller: scrollController,
+              child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // المقبض
                     Center(
                       child: Container(
                         width: 40,
@@ -559,35 +450,26 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height:  20),
-                    // صورة المحتوى
+                    const SizedBox(height: 20),
                     Container(
                       width: double.infinity,
                       height: 180,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            (item['color'] as Color).withOpacity(0.7),
-                            (item['color'] as Color),
-                          ],
+                          colors: [color.withOpacity(0.7), color],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(
-                        item['icon'] as IconData,
-                        size: 80,
-                        color: Colors.white,
-                      ),
+                      child: Icon(icon, size: 80, color: Colors.white),
                     ),
                     const SizedBox(height: 20),
-                    // العنوان والتصنيف
                     Row(
                       children: [
                         Expanded(
                           child: Text(
-                            item['title'],
+                            pack.title,
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -595,16 +477,16 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: (item['color'] as Color).withOpacity(0.15),
+                            color: color.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            item['category'],
-                            style:  TextStyle(
-                              color: item['color'] as Color,
+                            AppStrings.contentCategoryLabel(
+                                context, pack.category),
+                            style: TextStyle(
+                              color: color,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -612,103 +494,107 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // معلومات إضافية
                     Row(
                       children: [
                         _buildDetailChip(
-                            Icons.timer, item['duration'], Colors.grey[600]!),
+                            Icons.timer,
+                            AppStrings.contentMinutesShort(
+                                context, pack.durationMinutes),
+                            Colors.grey[600]!),
                         const SizedBox(width: 16),
                         _buildDetailChip(
-                            Icons.child_care, item['age'], Colors.grey[600]!),
+                            Icons.child_care,
+                            AppStrings.contentAgeRangeDisplay(
+                                context, pack.ageRange),
+                            Colors.grey[600]!),
                         const SizedBox(width: 16),
-                        _buildDetailChip(Icons.star, '${item['rating']}',
-                            const Color(0xFFFFB74D)),
+                        _buildDetailChip(Icons.star, '${pack.rating}', const Color(0xFFFFB74D)),
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // الوصف
-                    const Text(
-                      'الوصف',
-                      style:  TextStyle(
-                        fontSize:  18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height:  8),
                     Text(
-                      item['description'],
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors. grey[700],
-                        height: 1.5,
+                      AppStrings.contentDescriptionHeading(context),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      pack.description,
+                      style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.5),
+                    ),
+                    const SizedBox(height: 20),
+                    if (pack.zone.isNotEmpty) ...[
+                      _buildInfoRow(
+                        AppStrings.contentZoneLabel(context),
+                        AppStrings.behaviorZoneLabel(context, pack.zone),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    // المهارات المكتسبة
-                    const Text(
-                      'المهارات المكتسبة',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 8),
+                    ],
+                    _buildInfoRow(
+                        AppStrings.contentVersionLabel(context), pack.version),
+                    const SizedBox(height: 16),
+                    if (pack.topics.isNotEmpty) ...[
+                      Text(
+                        AppStrings.contentTopicsHeading(context),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildSkillChip('التركيز'),
-                        _buildSkillChip('الاستماع'),
-                        _buildSkillChip('القيم'),
-                        _buildSkillChip('اللغة'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // أزرار الإجراءات
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton. icon(
-                            onPressed:  () {
-                              setState(() {
-                                item['isDownloaded'] = !item['isDownloaded'];
-                              });
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(
-                              item['isDownloaded']
-                                  ?  Icons.delete_outline
-                                  : Icons.download,
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: pack.topics
+                            .map((topic) => Chip(
+                                  label: Text(topic, style: const TextStyle(fontSize: 12)),
+                                  backgroundColor: color.withOpacity(0.1),
+                                ))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (pack.skills.isNotEmpty) ...[
+                      Text(
+                        AppStrings.contentSkillsHeading(context),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: pack.skills
+                            .map((skill) => Chip(
+                                  label: Text(skill, style: const TextStyle(fontSize: 12)),
+                                  backgroundColor: const Color(0xFF90EE90).withOpacity(0.15),
+                                ))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(AppStrings.contentPlayingSnack(
+                                  context, pack.title)),
+                              backgroundColor: const Color(0xFF90EE90),
                             ),
-                            label: Text(
-                                item['isDownloaded'] ?  'حذف' : 'تحميل'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.play_arrow),
+                        label: Text(AppStrings.contentPlayButton(context)),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                  Text('جاري تشغيل ${item['title']}... '),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.play_arrow),
-                            label:  const Text('تشغيل الآن'),
-                            style:  ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -725,31 +611,17 @@ class _ContentLibraryScreenState extends State<ContentLibraryScreen>
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(color: color, fontWeight: FontWeight.w500),
-        ),
+        Text(text, style: TextStyle(fontSize: 13, color: color)),
       ],
     );
   }
 
-  Widget _buildSkillChip(String skill) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF90EE90).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF90EE90).withOpacity(0.3),
-        ),
-      ),
-      child: Text(
-        skill,
-        style: const TextStyle(
-          color: Color(0xFF2E7D32),
-          fontSize: 13,
-        ),
-      ),
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      children: [
+        Text('$label: ', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

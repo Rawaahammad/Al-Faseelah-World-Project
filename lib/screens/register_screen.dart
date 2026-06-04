@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../utils/app_strings.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -37,8 +38,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('يجب الموافقة على الشروط والأحكام'),
+          SnackBar(
+            content: Text(AppStrings.agreeTermsRequiredSnack(context)),
             backgroundColor: Colors.red,
           ),
         );
@@ -81,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -99,16 +100,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'تم إنشاء الحساب بنجاح!',
-              style: TextStyle(
+            Text(
+              AppStrings.registerSuccessTitle(dialogContext),
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'مرحباً ${_nameController.text}، يمكنك الآن استخدام التطبيق',
+              AppStrings.registerWelcomeBody(
+                  dialogContext, _nameController.text),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
             ),
@@ -117,10 +119,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   Navigator.pushReplacementNamed(context, '/home');
                 },
-                child: const Text('البدء'),
+                child: Text(AppStrings.getStarted(dialogContext)),
               ),
             ),
           ],
@@ -139,9 +141,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'إنشاء حساب جديد',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          AppStrings.registerAppBarTitle(context),
+          style: const TextStyle(color: Colors.black),
         ),
         centerTitle: true,
       ),
@@ -203,10 +205,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 8),
                     Text(
                       index == 0
-                          ? 'البيانات'
+                          ? AppStrings.regStepData(context)
                           : index == 1
-                              ? 'الأمان'
-                              : 'التأكيد',
+                              ? AppStrings.regStepSecurity(context)
+                              : AppStrings.regStepConfirm(context),
                       style: TextStyle(
                         fontSize: 12,
                         color: isActive
@@ -250,30 +252,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'البيانات الشخصية',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Text(
+          AppStrings.regPersonalTitle(context),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
-          'أدخل بياناتك الشخصية لإنشاء حسابك',
+          AppStrings.regPersonalSubtitle(context),
           style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
         TextFormField(
           controller: _nameController,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'الاسم الكامل',
-            hintText: 'أدخل اسمك الكامل',
-            prefixIcon: Icon(Icons.person_outlined),
+          decoration: InputDecoration(
+            labelText: AppStrings.fullNameLabel(context),
+            hintText: AppStrings.fullNameHint(context),
+            prefixIcon: const Icon(Icons.person_outlined),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'الرجاء إدخال الاسم';
+              return AppStrings.validationNameRequired(context);
             }
             if (value.length < 3) {
-              return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+              return AppStrings.validationNameMinLength(context);
             }
             return null;
           },
@@ -282,17 +284,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'البريد الإلكتروني',
-            hintText: 'example@email.com',
-            prefixIcon: Icon(Icons.email_outlined),
+          decoration: InputDecoration(
+            labelText: AppStrings.emailLabel(context),
+            hintText: AppStrings.emailHintSample(context),
+            prefixIcon: const Icon(Icons.email_outlined),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'الرجاء إدخال البريد الإلكتروني';
+              return AppStrings.validationEmailRequired(context);
             }
             if (!value.contains('@') || !value.contains('.')) {
-              return 'الرجاء إدخال بريد إلكتروني صحيح';
+              return AppStrings.validationEmailInvalid(context);
             }
             return null;
           },
@@ -301,10 +303,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'رقم الهاتف (اختياري)',
-            hintText: '+966 5X XXX XXXX',
-            prefixIcon: Icon(Icons.phone_outlined),
+          decoration: InputDecoration(
+            labelText: AppStrings.phoneOptionalLabel(context),
+            hintText: AppStrings.phoneHint(context),
+            prefixIcon: const Icon(Icons.phone_outlined),
           ),
         ),
       ],
@@ -315,13 +317,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'إعدادات الأمان',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Text(
+          AppStrings.regSecurityTitle(context),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
-          'أنشئ كلمة مرور قوية لحماية حسابك',
+          AppStrings.regSecuritySubtitle(context),
           style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
@@ -330,8 +332,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           obscureText: _obscurePassword,
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
-            labelText: 'كلمة المرور',
-            hintText: '••••••••',
+            labelText: AppStrings.passwordLabel(context),
+            hintText: AppStrings.passwordHintDots(context),
             prefixIcon: const Icon(Icons.lock_outlined),
             suffixIcon: IconButton(
               icon: Icon(
@@ -348,23 +350,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'الرجاء إدخال كلمة المرور';
+              return AppStrings.validationPasswordRequired(context);
             }
             if (value.length < 6) {
-              return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+              return AppStrings.validationPasswordMinLength(context);
             }
             return null;
           },
         ),
         const SizedBox(height: 12),
-        _buildPasswordStrengthIndicator(),
+        _buildPasswordStrengthIndicator(context),
         const SizedBox(height: 16),
         TextFormField(
           controller: _confirmPasswordController,
           obscureText: _obscureConfirmPassword,
           decoration: InputDecoration(
-            labelText: 'تأكيد كلمة المرور',
-            hintText: '••••••••',
+            labelText: AppStrings.confirmPasswordLabel(context),
+            hintText: AppStrings.passwordHintDots(context),
             prefixIcon: const Icon(Icons.lock_outlined),
             suffixIcon: IconButton(
               icon: Icon(
@@ -381,10 +383,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'الرجاء تأكيد كلمة المرور';
+              return AppStrings.validationConfirmPasswordRequired(context);
             }
             if (value != _passwordController.text) {
-              return 'كلمة المرور غير متطابقة';
+              return AppStrings.validationPasswordMismatch(context);
             }
             return null;
           },
@@ -393,10 +395,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildPasswordStrengthIndicator() {
+  Widget _buildPasswordStrengthIndicator(BuildContext context) {
     String password = _passwordController.text;
     double strength = 0;
-    String strengthText = 'ضعيفة';
+    String strengthText = AppStrings.passwordWeak(context);
     Color strengthColor = Colors.red;
 
     if (password.length >= 6) strength += 0.25;
@@ -405,16 +407,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (password.contains(RegExp(r'[0-9]'))) strength += 0.25;
 
     if (strength <= 0.25) {
-      strengthText = 'ضعيفة';
+      strengthText = AppStrings.passwordWeak(context);
       strengthColor = Colors.red;
     } else if (strength <= 0.5) {
-      strengthText = 'متوسطة';
+      strengthText = AppStrings.passwordMedium(context);
       strengthColor = Colors.orange;
     } else if (strength <= 0.75) {
-      strengthText = 'جيدة';
+      strengthText = AppStrings.passwordGood(context);
       strengthColor = Colors.lightGreen;
     } else {
-      strengthText = 'قوية';
+      strengthText = AppStrings.passwordStrong(context);
       strengthColor = Colors.green;
     }
 
@@ -425,7 +427,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'قوة كلمة المرور',
+              AppStrings.passwordStrengthLabel(context),
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
             Text(
@@ -453,16 +455,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
           spacing: 8,
           runSpacing: 4,
           children: [
-            _buildPasswordHint('6 أحرف', password.length >= 6),
-            _buildPasswordHint('حرف كبير', password.contains(RegExp(r'[A-Z]'))),
-            _buildPasswordHint('رقم', password.contains(RegExp(r'[0-9]'))),
+            _buildPasswordHint(
+                context, AppStrings.pwdHint6Chars(context), password.length >= 6),
+            _buildPasswordHint(
+                context,
+                AppStrings.pwdHintUpper(context),
+                password.contains(RegExp(r'[A-Z]'))),
+            _buildPasswordHint(
+                context,
+                AppStrings.pwdHintDigit(context),
+                password.contains(RegExp(r'[0-9]'))),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildPasswordHint(String text, bool isValid) {
+  Widget _buildPasswordHint(BuildContext context, String text, bool isValid) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -487,13 +496,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'تأكيد البيانات',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Text(
+          AppStrings.regConfirmTitle(context),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
-          'راجع بياناتك قبل إنشاء الحساب',
+          AppStrings.regConfirmSubtitle(context),
           style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
@@ -502,12 +511,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildSummaryItem('الاسم', _nameController.text, Icons.person),
+                _buildSummaryItem(
+                    context, AppStrings.summaryName(context), _nameController.text, Icons.person),
                 const Divider(),
-                _buildSummaryItem('البريد', _emailController.text, Icons.email),
+                _buildSummaryItem(
+                    context, AppStrings.summaryEmail(context), _emailController.text, Icons.email),
                 if (_phoneController.text.isNotEmpty) ...[
                   const Divider(),
-                  _buildSummaryItem('الهاتف', _phoneController.text, Icons.phone),
+                  _buildSummaryItem(context, AppStrings.summaryPhone(context),
+                      _phoneController.text, Icons.phone),
                 ],
               ],
             ),
@@ -534,23 +546,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Expanded(
               child: Wrap(
                 children: [
-                  const Text('أوافق على '),
+                  Text(AppStrings.iAgreePrefix(context)),
                   GestureDetector(
                     onTap: () => _showTermsDialog(),
-                    child: const Text(
-                      'الشروط والأحكام',
-                      style: TextStyle(
+                    child: Text(
+                      AppStrings.termsLink(context),
+                      style: const TextStyle(
                         color: Color(0xFF87CEEB),
                         decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
-                  const Text(' و'),
+                  Text(AppStrings.andWord(context)),
                   GestureDetector(
                     onTap: () => _showPrivacyDialog(),
-                    child: const Text(
-                      'سياسة الخصوصية',
-                      style: TextStyle(
+                    child: Text(
+                      AppStrings.privacyLink(context),
+                      style: const TextStyle(
                         color: Color(0xFF87CEEB),
                         decoration: TextDecoration.underline,
                       ),
@@ -565,7 +577,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, IconData icon) {
+  Widget _buildSummaryItem(
+      BuildContext context, String label, String value, IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -594,7 +607,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('السابق'),
+              child: Text(AppStrings.previous(context)),
             ),
           ),
         if (_currentStep > 0) const SizedBox(width: 16),
@@ -625,7 +638,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : Text(_currentStep < 2 ? 'التالي' : 'إنشاء حساب'),
+                : Text(_currentStep < 2
+                    ? AppStrings.next(context)
+                    : AppStrings.createAccountButton(context)),
           ),
         ),
       ],
@@ -637,14 +652,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'لديك حساب بالفعل؟',
+          AppStrings.haveAccountPrompt(context),
           style: TextStyle(color: Colors.grey[600]),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'تسجيل الدخول',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          child: Text(
+            AppStrings.loginButton(context),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -654,22 +669,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _showTermsDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('الشروط والأحكام'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'شروط وأحكام استخدام تطبيق عالم الفسيلة:\n\n'
-            '1. يجب أن يكون المستخدم ولي أمر الطفل أو وصيه القانوني.\n\n'
-            '2. يتحمل ولي الأمر مسؤولية استخدام التطبيق ومراقبة تفاعل الطفل.\n\n'
-            '3. نحافظ على خصوصية بيانات الأطفال ولا نشاركها مع أطراف ثالثة.\n\n'
-            '4. المحتوى التعليمي مصمم للأطفال من 3-12 سنة.\n\n'
-            '5. يحق لنا تحديث الشروط والأحكام مع إشعار المستخدمين.',
-          ),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppStrings.termsDialogTitle(dialogContext)),
+        content: SingleChildScrollView(
+          child: Text(AppStrings.termsDialogBody(dialogContext)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppStrings.close(dialogContext)),
           ),
         ],
       ),
@@ -679,22 +687,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _showPrivacyDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('سياسة الخصوصية'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'سياسة الخصوصية لتطبيق عالم الفسيلة:\n\n'
-            '1. نجمع البيانات الضرورية فقط لتشغيل التطبيق.\n\n'
-            '2. بيانات الأطفال محمية ولا يتم مشاركتها.\n\n'
-            '3. نستخدم التشفير لحماية جميع البيانات.\n\n'
-            '4. يمكنك طلب حذف بياناتك في أي وقت.\n\n'
-            '5. لا نستخدم البيانات لأغراض إعلانية.',
-          ),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppStrings.privacyDialogTitleReg(dialogContext)),
+        content: SingleChildScrollView(
+          child: Text(AppStrings.privacyDialogBodyReg(dialogContext)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppStrings.close(dialogContext)),
           ),
         ],
       ),

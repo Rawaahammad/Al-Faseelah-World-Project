@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 /// نموذج بيانات الطفل
 class Child {
   final String id;
@@ -10,6 +8,8 @@ class Child {
   final List<String> interests;
   final DateTime createdAt;
   final String? parentId;
+  /// Parent-written focus areas / suggestions; persisted in Supabase `parent_notes`.
+  final String? parentNotes;
 
   Child({
     required this.id,
@@ -20,21 +20,14 @@ class Child {
     required this.interests,
     required this.createdAt,
     this.parentId,
+    this.parentNotes,
   });
 
-  /// إنشاء من Firestore
-  factory Child.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return Child(
-      id: doc.id,
-      name: data['name'] ?? '',
-      age: data['age'] ?? 5,
-      gender: data['gender'] ?? 'ذكر',
-      avatar: data['avatar'] ?? '👦',
-      interests: List<String>.from(data['interests'] ?? []),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      parentId: data['parentId'],
-    );
+  static DateTime _parseCreatedAt(dynamic raw) {
+    if (raw is String) {
+      return DateTime.tryParse(raw) ?? DateTime.now();
+    }
+    return DateTime.now();
   }
 
   /// إنشاء من JSON
@@ -46,14 +39,13 @@ class Child {
       gender: json['gender'] ?? 'ذكر',
       avatar: json['avatar'] ?? '👦',
       interests: List<String>.from(json['interests'] ?? []),
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      parentId: json['parentId'],
+      createdAt: _parseCreatedAt(json['createdAt']),
+      parentId: json['parentId'] as String?,
+      parentNotes: json['parentNotes'] as String?,
     );
   }
 
-  /// تحويل إلى JSON للحفظ في Firestore
+  /// تحويل إلى JSON (عميل / تخزين مؤقت)
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -61,8 +53,9 @@ class Child {
       'gender': gender,
       'avatar': avatar,
       'interests': interests,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': createdAt.toIso8601String(),
       'parentId': parentId,
+      'parentNotes': parentNotes,
     };
   }
 
@@ -76,6 +69,8 @@ class Child {
     List<String>? interests,
     DateTime? createdAt,
     String? parentId,
+    String? parentNotes,
+    bool clearParentNotes = false,
   }) {
     return Child(
       id: id ?? this.id,
@@ -86,6 +81,8 @@ class Child {
       interests: interests ?? this.interests,
       createdAt: createdAt ?? this.createdAt,
       parentId: parentId ?? this.parentId,
+      parentNotes:
+          clearParentNotes ? null : (parentNotes ?? this.parentNotes),
     );
   }
 }

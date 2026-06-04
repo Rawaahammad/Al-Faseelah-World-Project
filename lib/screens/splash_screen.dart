@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../utils/app_strings.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,9 +44,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     // التحقق من حالة تسجيل الدخول
-    final user = FirebaseAuth.instance.currentUser;
+    final session = Supabase.instance.client.auth.currentSession;
     
-    if (user != null) {
+    if (session != null) {
       // المستخدم مسجل الدخول - الانتقال للصفحة الرئيسية
       Navigator.pushReplacementNamed(context, '/home');
     } else {
@@ -79,30 +81,49 @@ class _SplashScreenState extends State<SplashScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    width: 160,
+                    height: 160,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    child: const Icon(
-                      Icons.spa,
-                      size: 80,
-                      color: Colors.white,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.spa, size: 80, color: Colors.white),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'عالم الفسيلة',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.appTitle(context),
+                    style: const TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'تعلم • العب • انمُ',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.splashTagline(context),
+                    style: const TextStyle(
                       fontSize: 18,
                       color: Colors.white,
                     ),

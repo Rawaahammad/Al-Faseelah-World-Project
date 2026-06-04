@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// شاشة التقارير الذكية
+import '../models/child_model.dart';
+import '../services/child_service.dart';
+import '../utils/app_strings.dart';
+
 class AIReportsScreen extends StatefulWidget {
   const AIReportsScreen({super.key});
 
@@ -9,10 +12,12 @@ class AIReportsScreen extends StatefulWidget {
 }
 
 class _AIReportsScreenState extends State<AIReportsScreen> {
-  String _selectedChild = 'سارة';
-  final List<String> _children = ['سارة', 'أحمد'];
+  final ChildService _childService = ChildService();
+  List<Child> _children = [];
+  int _selectedChildIndex = 0;
+  bool _isLoading = true;
+  ChildStats? _stats;
 
-  // ألوان التطبيق
   static const Color skyBlue = Color(0xFF87CEEB);
   static const Color lightGreen = Color(0xFF90EE90);
   static const Color orange = Color(0xFFFFB74D);
@@ -20,55 +25,114 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
   static const Color cyan = Color(0xFF4DD0E1);
 
   @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final children = await _childService.getChildren();
+    if (mounted) {
+      setState(() {
+        _children = children;
+      });
+      if (children.isNotEmpty) {
+        await _loadStats(children[0].id);
+      } else {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadStats(String childId) async {
+    setState(() => _isLoading = true);
+    final stats = await _childService.getChildStats(childId);
+    if (mounted) {
+      setState(() {
+        _stats = stats;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Child? get _selectedChild {
+    if (_children.isEmpty || _selectedChildIndex >= _children.length) return null;
+    return _children[_selectedChildIndex];
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:  AppBar(
-        title: const Text('التقارير الذكية'),
+      appBar: AppBar(
+        title: Text(AppStrings.aiReportsAppBarTitle(context)),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('جاري مشاركة التقرير...')),
-              );
-            },
+            onPressed: () => _shareReport(),
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('جاري تحميل التقرير.. .')),
-              );
-            },
+            onPressed: () => _exportReport(),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildChildSelector(),
-            const SizedBox(height: 24),
-            _buildWeeklySummary(),
-            const SizedBox(height: 24),
-            _buildSkillsAnalysis(),
-            const SizedBox(height: 24),
-            _buildBehaviorPatterns(),
-            const SizedBox(height:  24),
-            _buildEducationalRecommendations(),
-            const SizedBox(height: 24),
-            _buildOptimalLearningTimes(),
-            const SizedBox(height: 24),
-            _buildProgressComparison(),
-            const SizedBox(height: 20),
-          ],
-        ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _children.isEmpty
+              ? _buildNoChildrenState()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildChildSelector(),
+                      const SizedBox(height: 24),
+                      _buildWeeklySummary(),
+                      const SizedBox(height: 24),
+                      _buildSkillsAnalysis(),
+                      const SizedBox(height: 24),
+                      _buildBehaviorPatterns(),
+                      const SizedBox(height: 24),
+                      _buildEducationalRecommendations(),
+                      const SizedBox(height: 24),
+                      _buildOptimalLearningTimes(),
+                      const SizedBox(height: 24),
+                      _buildProgressComparison(),
+                      const SizedBox(height: 24),
+                      _buildExportSection(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildNoChildrenState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.child_care, size: 80, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(AppStrings.aiReportsNoChildren(context),
+              style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 8),
+          Text(AppStrings.aiReportsAddChildHint(context),
+              style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/add-child');
+              _loadData();
+            },
+            icon: const Icon(Icons.add),
+            label: Text(AppStrings.aiReportsAddChildButton(context)),
+          ),
+        ],
       ),
     );
   }
 
-  /// اختيار الطفل
   Widget _buildChildSelector() {
     return Card(
       child: Padding(
@@ -77,14 +141,14 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
           children: [
             Container(
               width: 50,
-              height:  50,
+              height: 50,
               decoration: BoxDecoration(
                 color: skyBlue.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
-                  _selectedChild == 'سارة' ? '👧' :  '👦',
+                  _selectedChild?.avatar ?? '👦',
                   style: const TextStyle(fontSize: 28),
                 ),
               ),
@@ -92,43 +156,48 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value:  _selectedChild,
+                child: DropdownButton<int>(
+                  value: _selectedChildIndex,
                   isExpanded: true,
-                  items: _children.map((child) {
+                  items: _children.asMap().entries.map((entry) {
                     return DropdownMenuItem(
-                      value:  child,
+                      value: entry.key,
                       child: Text(
-                        child,
+                        entry.value.name,
                         style: const TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight. bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     );
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
-                      _selectedChild = value!;
+                      _selectedChildIndex = value!;
                     });
+                    _loadStats(_children[value!].id);
                   },
                 ),
               ),
             ),
             Container(
-              padding:  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: lightGreen.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.auto_awesome, size: 16, color: lightGreen),
-                  SizedBox(width: 4),
+                  const Icon(Icons.auto_awesome, size: 16, color: lightGreen),
+                  const SizedBox(width: 4),
                   Text(
-                    'تحليل جديد',
+                    _stats != null && _stats!.totalActivities > 0
+                        ? AppStrings.aiReportsBadgeNew(context)
+                        : AppStrings.aiReportsBadgeNoData(context),
                     style: TextStyle(
-                      color: Color(0xFF2E7D32),
+                      color: _stats != null && _stats!.totalActivities > 0
+                          ? const Color(0xFF2E7D32)
+                          : Colors.grey[600],
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -142,18 +211,21 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
     );
   }
 
-  /// ملخص الأسبوع
   Widget _buildWeeklySummary() {
+    final totalHours = _stats != null ? (_stats!.totalMinutes / 60).toStringAsFixed(1) : '0.0';
+    final totalStars = _stats?.totalStars ?? 0;
+    final totalActivities = _stats?.totalActivities ?? 0;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [skyBlue, lightGreen],
           begin: Alignment.topLeft,
-          end: Alignment. bottomRight,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow:  [
+        boxShadow: [
           BoxShadow(
             color: skyBlue.withOpacity(0.3),
             blurRadius: 15,
@@ -162,15 +234,15 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment:  CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.summarize, color: Colors.white),
-              SizedBox(width: 8),
+              const Icon(Icons.summarize, color: Colors.white),
+              const SizedBox(width: 8),
               Text(
-                'ملخص الأسبوع',
-                style: TextStyle(
+                AppStrings.aiReportsWeeklySummaryTitle(context),
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -179,18 +251,38 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'أظهرت سارة تقدماً ملحوظاً هذا الأسبوع في مهارات القراءة والتواصل.  '
-                'كانت الجلسات أطول وأكثر تركيزاً مقارنة بالأسبوع الماضي.',
-            style: TextStyle(color: Colors.white, fontSize: 15, height: 1.5),
+          Text(
+            totalActivities > 0
+                ? AppStrings.aiReportsSummaryWithData(
+                    context,
+                    _selectedChild?.name ??
+                        AppStrings.aiReportsChildFallback(context),
+                    totalActivities,
+                    totalHours,
+                  )
+                : AppStrings.aiReportsSummaryNoData(context),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 15, height: 1.5),
           ),
-          const SizedBox(height:  16),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSummaryItem('⏱️', '5.2 ساعة', 'إجمالي اللعب'),
-              _buildSummaryItem('📈', '+15%', 'نمو المهارات'),
-              _buildSummaryItem('🌟', '12', 'نجوم جديدة'),
+              _buildSummaryItem(
+                '⏱️',
+                '$totalHours ${AppStrings.aiReportsHoursUnit(context)}',
+                AppStrings.aiReportsTotalPlayHours(context),
+              ),
+              _buildSummaryItem(
+                '📈',
+                '$totalActivities',
+                AppStrings.aiReportsCompletedActivities(context),
+              ),
+              _buildSummaryItem(
+                '🌟',
+                '$totalStars',
+                AppStrings.aiReportsStarsEarned(context),
+              ),
             ],
           ),
         ],
@@ -207,7 +299,7 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight. bold,
+            fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
         ),
@@ -219,14 +311,38 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
     );
   }
 
-  /// تحليل المهارات
   Widget _buildSkillsAnalysis() {
     final skills = [
-      {'name': 'القراءة والاستماع', 'progress': 85, 'trend': '+8%', 'color': skyBlue, 'icon': Icons.menu_book},
-      {'name': 'المهارات الاجتماعية', 'progress': 72, 'trend':  '+5%', 'color':  lightGreen, 'icon':  Icons.people},
-      {'name': 'التفكير المنطقي', 'progress': 68, 'trend':  '+3%', 'color':  orange, 'icon': Icons. psychology},
-      {'name': 'الإبداع والخيال', 'progress': 90, 'trend': '+12%', 'color': purple, 'icon': Icons.brush},
-      {'name': 'المهارات الحركية', 'progress': 75, 'trend': '+4%', 'color': cyan, 'icon': Icons.sports_handball},
+      {
+        'name': AppStrings.aiReportsSkillReading(context),
+        'progress': _stats?.totalActivities ?? 0,
+        'color': skyBlue,
+        'icon': Icons.menu_book
+      },
+      {
+        'name': AppStrings.aiReportsSkillSocial(context),
+        'progress': 0,
+        'color': lightGreen,
+        'icon': Icons.people
+      },
+      {
+        'name': AppStrings.aiReportsSkillLogic(context),
+        'progress': 0,
+        'color': orange,
+        'icon': Icons.psychology
+      },
+      {
+        'name': AppStrings.aiReportsSkillCreativity(context),
+        'progress': 0,
+        'color': purple,
+        'icon': Icons.brush
+      },
+      {
+        'name': AppStrings.aiReportsSkillMotor(context),
+        'progress': 0,
+        'color': cyan,
+        'icon': Icons.sports_handball
+      },
     ];
 
     return Card(
@@ -240,33 +356,47 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: purple. withOpacity(0.15),
+                    color: purple.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.analytics, color: purple),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'تحليل المهارات',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  AppStrings.aiReportsSkillsTitle(context),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            ...skills.map((skill) => _buildSkillProgressBar(
-              skill['name'] as String,
-              skill['progress'] as int,
-              skill['trend'] as String,
-              skill['color'] as Color,
-              skill['icon'] as IconData,
-            )),
+            ...skills.map((skill) {
+              final maxVal = (_stats?.totalActivities ?? 0) > 0 ? _stats!.totalActivities : 1;
+              final progress = ((skill['progress'] as int) / maxVal * 100).clamp(0, 100).toInt();
+              return _buildSkillProgressBar(
+                skill['name'] as String,
+                progress,
+                skill['color'] as Color,
+                skill['icon'] as IconData,
+              );
+            }),
+            if ((_stats?.totalActivities ?? 0) == 0)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: Text(
+                    AppStrings.aiReportsSkillsPlaceholder(context),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSkillProgressBar(String name, int progress, String trend, Color color, IconData icon) {
+  Widget _buildSkillProgressBar(String name, int progress, Color color, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -277,7 +407,7 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color. withOpacity(0.15),
+                  color: color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(icon, size: 18, color: color),
@@ -289,35 +419,10 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: lightGreen.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child:  Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.trending_up, size: 14, color: Color(0xFF2E7D32)),
-                    const SizedBox(width: 4),
-                    Text(
-                      trend,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF2E7D32),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(width: 10),
               Text(
                 '$progress%',
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -336,14 +441,31 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
     );
   }
 
-  /// أنماط السلوك المكتشفة
   Widget _buildBehaviorPatterns() {
-    final patterns = [
-      {'emoji': '🎯', 'title': 'التركيز العالي', 'description': 'سارة تظهر أعلى مستويات التركيز عند سماع القصص', 'color': lightGreen},
-      {'emoji':  '🎨', 'title': 'الميل للإبداع', 'description': 'تفضل الأنشطة التي تتيح لها التعبير عن نفسها', 'color':  purple},
-      {'emoji': '🤝', 'title': 'التفاعل الاجتماعي', 'description': 'تستمتع بالأنشطة التي تحاكي التفاعل مع الآخرين', 'color': skyBlue},
-      {'emoji':  '📚', 'title': 'حب التعلم', 'description':  'تطلب تكرار الأنشطة التعليمية بشكل متكرر', 'color':  orange},
-    ];
+    final hasData = (_stats?.totalActivities ?? 0) > 0;
+
+    final patterns = hasData
+        ? [
+            {
+              'emoji': '🎯',
+              'title': AppStrings.aiReportsPatternFocusTitle(context),
+              'description': AppStrings.aiReportsPatternFocusDesc(context),
+              'color': lightGreen
+            },
+            {
+              'emoji': '🎨',
+              'title': AppStrings.aiReportsPatternCreativeTitle(context),
+              'description': AppStrings.aiReportsPatternCreativeDesc(context),
+              'color': purple
+            },
+            {
+              'emoji': '🤝',
+              'title': AppStrings.aiReportsPatternSocialTitle(context),
+              'description': AppStrings.aiReportsPatternSocialDesc(context),
+              'color': skyBlue
+            },
+          ]
+        : <Map<String, dynamic>>[];
 
     return Card(
       child: Padding(
@@ -356,25 +478,43 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color:  cyan.withOpacity(0.15),
+                    color: cyan.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.psychology, color: cyan),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'أنماط السلوك المكتشفة',
-                  style: TextStyle(fontSize:  18, fontWeight: FontWeight.bold),
+                Text(
+                  AppStrings.aiReportsBehaviorTitle(context),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            ...patterns.map((pattern) => _buildPatternItem(
-              pattern['emoji'] as String,
-              pattern['title'] as String,
-              pattern['description'] as String,
-              pattern['color'] as Color,
-            )),
+            if (patterns.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.psychology_outlined, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      Text(
+                        AppStrings.aiReportsBehaviorPlaceholder(context),
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...patterns.map((pattern) => _buildPatternItem(
+                    pattern['emoji'] as String,
+                    pattern['title'] as String,
+                    pattern['description'] as String,
+                    pattern['color'] as Color,
+                  )),
           ],
         ),
       ),
@@ -398,10 +538,7 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight. bold),
-                ),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(
                   description,
@@ -415,12 +552,23 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
     );
   }
 
-  /// التوصيات التربوية
   Widget _buildEducationalRecommendations() {
     final recommendations = [
-      {'icon': Icons.menu_book, 'title': 'القراءة التفاعلية', 'description': 'جربي قراءة القصص مع سارة وطرح أسئلة عن الشخصيات.  هذا يعزز مهارات التفكير النقدي.'},
-      {'icon': Icons.group, 'title': 'اللعب الجماعي', 'description': 'شجعي سارة على اللعب مع أطفال آخرين لتطوير مهاراتها الاجتماعية.'},
-      {'icon': Icons.schedule, 'title': 'روتين ثابت', 'description':  'حافظي على وقت لعب ثابت يومياً (4-6 مساءً) حيث تظهر سارة أفضل تركيز.'},
+      {
+        'icon': Icons.menu_book,
+        'title': AppStrings.aiReportsRecReadingTitle(context),
+        'description': AppStrings.aiReportsRecReadingBody(context),
+      },
+      {
+        'icon': Icons.group,
+        'title': AppStrings.aiReportsRecGroupTitle(context),
+        'description': AppStrings.aiReportsRecGroupBody(context),
+      },
+      {
+        'icon': Icons.schedule,
+        'title': AppStrings.aiReportsRecRoutineTitle(context),
+        'description': AppStrings.aiReportsRecRoutineBody(context),
+      },
     ];
 
     return Card(
@@ -429,14 +577,11 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors:  [
-              orange.withOpacity(0.1),
-              purple.withOpacity(0.1),
-            ],
+            colors: [orange.withOpacity(0.1), purple.withOpacity(0.1)],
           ),
         ),
         child: Column(
-          crossAxisAlignment:  CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -449,18 +594,19 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
                   child: const Icon(Icons.lightbulb, color: orange),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'توصيات تربوية',
-                  style: TextStyle(fontSize: 18, fontWeight:  FontWeight.bold),
+                Text(
+                  AppStrings.aiReportsRecommendationsTitle(context),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             ...recommendations.map((rec) => _buildRecommendationItem(
-              rec['icon'] as IconData,
-              rec['title'] as String,
-              rec['description'] as String,
-            )),
+                  rec['icon'] as IconData,
+                  rec['title'] as String,
+                  rec['description'] as String,
+                )),
           ],
         ),
       ),
@@ -473,7 +619,7 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius. circular(12),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,10 +630,7 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight. bold),
-                ),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(
                   description,
@@ -501,17 +644,40 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
     );
   }
 
-  /// أفضل أوقات التعلم
   Widget _buildOptimalLearningTimes() {
     final times = [
-      {'emoji': '🌅', 'period': 'صباحاً', 'hours': '9-11', 'level': 'متوسط', 'color': orange},
-      {'emoji': '☀️', 'period': 'ظهراً', 'hours': '1-3', 'level': 'منخفض', 'color': Colors.grey},
-      {'emoji': '🌆', 'period': 'عصراً', 'hours':  '4-6', 'level': 'ممتاز', 'color':  lightGreen},
-      {'emoji': '🌙', 'period': 'مساءً', 'hours':  '7-9', 'level': 'جيد', 'color': skyBlue},
+      {
+        'emoji': '🌅',
+        'period': AppStrings.aiReportsPeriodMorning(context),
+        'hours': '9-11',
+        'level': AppStrings.aiReportsLevelMedium(context),
+        'color': orange
+      },
+      {
+        'emoji': '☀️',
+        'period': AppStrings.aiReportsPeriodNoon(context),
+        'hours': '1-3',
+        'level': AppStrings.aiReportsLevelLow(context),
+        'color': Colors.grey
+      },
+      {
+        'emoji': '🌆',
+        'period': AppStrings.aiReportsPeriodAfternoon(context),
+        'hours': '4-6',
+        'level': AppStrings.aiReportsLevelExcellent(context),
+        'color': lightGreen
+      },
+      {
+        'emoji': '🌙',
+        'period': AppStrings.aiReportsPeriodEvening(context),
+        'hours': '7-9',
+        'level': AppStrings.aiReportsLevelGood(context),
+        'color': skyBlue
+      },
     ];
 
     return Card(
-      child:  Padding(
+      child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,7 +685,7 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
             Row(
               children: [
                 Container(
-                  padding:  const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: skyBlue.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -527,23 +693,26 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
                   child: const Icon(Icons.access_time, color: skyBlue),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'أفضل أوقات التعلم',
-                  style: TextStyle(fontSize:  18, fontWeight: FontWeight.bold),
+                Text(
+                  AppStrings.aiReportsBestTimesTitle(context),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Row(
-              children: times.map((time) => Expanded(
-                child: _buildTimeBlock(
-                  time['emoji'] as String,
-                  time['period'] as String,
-                  time['hours'] as String,
-                  time['level'] as String,
-                  time['color'] as Color,
-                ),
-              )).toList(),
+              children: times
+                  .map((time) => Expanded(
+                        child: _buildTimeBlock(
+                          time['emoji'] as String,
+                          time['period'] as String,
+                          time['hours'] as String,
+                          time['level'] as String,
+                          time['color'] as Color,
+                        ),
+                      ))
+                  .toList(),
             ),
             const SizedBox(height: 12),
             Container(
@@ -552,14 +721,14 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
                 color: lightGreen.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.star, color: lightGreen),
-                  SizedBox(width: 8),
+                  const Icon(Icons.star, color: lightGreen),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'أفضل وقت للتعلم:  4: 00 - 6:00 مساءً',
-                      style: TextStyle(fontWeight: FontWeight.w500),
+                      AppStrings.aiReportsBestTimeBanner(context),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -584,20 +753,14 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
         children: [
           Text(emoji, style: const TextStyle(fontSize: 20)),
           const SizedBox(height: 4),
-          Text(
-            period,
-            style:  const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            hours,
-            style:  TextStyle(fontSize: 9, color: Colors.grey[600]),
-          ),
+          Text(period, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(hours, style: TextStyle(fontSize: 9, color: Colors.grey[600])),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius. circular(8),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               level,
@@ -613,125 +776,263 @@ class _AIReportsScreenState extends State<AIReportsScreen> {
     );
   }
 
-  /// مقارنة التقدم
   Widget _buildProgressComparison() {
+    final totalMinutes = _stats?.totalMinutes ?? 0;
+    final totalActivities = _stats?.totalActivities ?? 0;
+    final totalStars = _stats?.totalStars ?? 0;
+    final avgDaily = _stats?.averageDailyMinutes ?? 0;
+
     final comparisons = [
-      {'label': 'وقت اللعب', 'current': '5. 2 ساعة', 'previous': '4.5 ساعة', 'isUp': true},
-      {'label':  'الأنشطة المكتملة', 'current': '28', 'previous': '22', 'isUp': true},
-      {'label': 'مستوى التركيز', 'current': '85%', 'previous': '78%', 'isUp': true},
-      {'label': 'النجوم المكتسبة', 'current': '12', 'previous': '9', 'isUp': true},
+      {
+        'label': AppStrings.aiReportsStatPlayTime(context),
+        'current': AppStrings.aiReportsMinutesShort(context, totalMinutes),
+        'icon': Icons.timer
+      },
+      {
+        'label': AppStrings.aiReportsStatActivities(context),
+        'current': '$totalActivities',
+        'icon': Icons.check_circle
+      },
+      {
+        'label': AppStrings.aiReportsStatDailyAvg(context),
+        'current': AppStrings.aiReportsPerDayShort(context, avgDaily),
+        'icon': Icons.trending_up
+      },
+      {
+        'label': AppStrings.aiReportsStatStars(context),
+        'current': '$totalStars',
+        'icon': Icons.star
+      },
     ];
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets. all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:  CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children:  [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color:  lightGreen.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.compare_arrows, color: lightGreen),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'مقارنة التقدم',
-                      style: TextStyle(fontSize:  18, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
+              children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(20),
+                    color: lightGreen.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'هذا الأسبوع vs الماضي',
-                    style:  TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
+                  child: const Icon(Icons.compare_arrows, color: lightGreen),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  AppStrings.aiReportsStatsSummaryTitle(context),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            ...comparisons.map((comp) => _buildComparisonRow(
-              comp['label'] as String,
-              comp['current'] as String,
-              comp['previous'] as String,
-              comp['isUp'] as bool,
-            )),
+            const SizedBox(height: 16),
+            ...comparisons.map((comp) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(comp['icon'] as IconData, color: skyBlue, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(comp['label'] as String),
+                      ),
+                      Text(
+                        comp['current'] as String,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                )),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildComparisonRow(String label, String current, String previous, bool isUp) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child:  Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          ),
-          Expanded(
-            child: Column(
+  Widget _buildExportSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.file_download, color: orange),
+                ),
+                const SizedBox(width: 12),
                 Text(
-                  current,
+                  AppStrings.aiReportsExportTitle(context),
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: skyBlue,
-                  ),
-                ),
-                const Text(
-                  'الحالي',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isUp
-                  ? lightGreen.withOpacity(0.15)
-                  : Colors.red.withOpacity(0.15),
-              shape: BoxShape.circle,
+            const SizedBox(height: 16),
+            Text(
+              AppStrings.aiReportsExportSubtitle(context),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
-            child: Icon(
-              isUp ? Icons.trending_up : Icons.trending_down,
-              size: 16,
-              color: isUp ?  const Color(0xFF2E7D32) : Colors.red,
-            ),
-          ),
-          Expanded(
-            child: Column(
+            const SizedBox(height: 16),
+            Row(
               children: [
-                Text(
-                  previous,
-                  style:  TextStyle(
-                    fontWeight:  FontWeight.w500,
-                    color: Colors.grey[600],
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _exportReport(),
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: Text(AppStrings.aiReportsExportPdf(context)),
                   ),
                 ),
-                const Text(
-                  'السابق',
-                  style: TextStyle(fontSize: 10, color:  Colors.grey),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _shareReport(),
+                    icon: const Icon(Icons.share),
+                    label: Text(AppStrings.aiReportsShare(context)),
+                  ),
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _exportReport() {
+    if (_selectedChild == null || _stats == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.aiReportsNoDataExport(context))),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.picture_as_pdf, color: orange),
+            const SizedBox(width: 8),
+            Text(AppStrings.aiReportsExportDialogTitle(context)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(AppStrings.aiReportsExportReportLine(
+                context, _selectedChild!.name)),
+            const SizedBox(height: 8),
+            Text(AppStrings.aiReportsExportIncludes(context)),
+            const SizedBox(height: 8),
+            _buildExportItem(
+                AppStrings.aiReportsExportItemSummary(context)),
+            _buildExportItem(AppStrings.aiReportsExportItemSkills(context)),
+            _buildExportItem(
+                AppStrings.aiReportsExportItemBehavior(context)),
+            _buildExportItem(AppStrings.aiReportsExportItemRecs(context)),
+            _buildExportItem(AppStrings.aiReportsExportItemStats(context)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppStrings.cancel(context)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _generateReport();
+            },
+            icon: const Icon(Icons.download),
+            label: Text(AppStrings.aiReportsExportAction(context)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExportItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.check, size: 16, color: lightGreen),
+          const SizedBox(width: 8),
+          Text(text, style: const TextStyle(fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  void _generateReport() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(AppStrings.aiReportsExportSuccess(
+                        context, _selectedChild!.name)),
+                  ],
+                ),
+                backgroundColor: lightGreen,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        });
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(AppStrings.aiReportsGenerating(context)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _shareReport() {
+    if (_selectedChild == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.aiReportsNoDataShare(context))),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppStrings.aiReportsSharing(context, _selectedChild!.name)),
+        backgroundColor: skyBlue,
       ),
     );
   }

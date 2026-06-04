@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_strings.dart';
 import '../services/child_service.dart';
 import '../models/child_model.dart';
 
@@ -11,8 +12,10 @@ class ChildProfileScreen extends StatefulWidget {
 
 class _ChildProfileScreenState extends State<ChildProfileScreen> {
   final ChildService _childService = ChildService();
+  final TextEditingController _parentNotesController = TextEditingController();
   List<Child> _children = [];
   bool _isLoading = true;
+  bool _savingParentNotes = false;
   int selectedChildIndex = 0;
 
   @override
@@ -21,13 +24,60 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     _loadChildren();
   }
 
+  @override
+  void dispose() {
+    _parentNotesController.dispose();
+    super.dispose();
+  }
+
+  void _syncParentNotesField() {
+    if (_children.isEmpty) {
+      _parentNotesController.text = '';
+      return;
+    }
+    final idx = selectedChildIndex.clamp(0, _children.length - 1);
+    _parentNotesController.text = _children[idx].parentNotes ?? '';
+  }
+
   Future<void> _loadChildren() async {
     final children = await _childService.getChildren();
     if (mounted) {
       setState(() {
         _children = children;
         _isLoading = false;
+        if (selectedChildIndex >= _children.length) {
+          selectedChildIndex = 0;
+        }
       });
+      _syncParentNotesField();
+    }
+  }
+
+  Future<void> _saveParentNotes(Child child) async {
+    final text = _parentNotesController.text.trim();
+    final updated = text.isEmpty
+        ? child.copyWith(clearParentNotes: true)
+        : child.copyWith(parentNotes: text);
+
+    setState(() => _savingParentNotes = true);
+    final result = await _childService.updateChild(updated);
+    if (!mounted) return;
+    setState(() => _savingParentNotes = false);
+
+    if (result.success) {
+      setState(() {
+        final i = _children.indexWhere((c) => c.id == child.id);
+        if (i != -1) {
+          _children[i] = updated;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppStrings.parentNotesSaved(context))),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message)),
+      );
     }
   }
 
@@ -56,21 +106,22 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('ملف الطفل')),
+        appBar: AppBar(title: Text(AppStrings.childProfileTitle(context))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_children.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('ملف الطفل')),
+        appBar: AppBar(title: Text(AppStrings.childProfileTitle(context))),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.child_care, size: 80, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text('لا يوجد أطفال مسجلين', style: TextStyle(fontSize: 18)),
+              Text(AppStrings.noChildrenRegistered(context),
+                  style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () async {
@@ -78,7 +129,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   _loadChildren();
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('إضافة طفل'),
+                label: Text(AppStrings.addChild(context)),
               ),
             ],
           ),
@@ -94,12 +145,12 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ملف الطفل'),
+        title: Text(AppStrings.childProfileTitle(context)),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              _showEditChildDialog(context, child);
+              _showEditChildDialog(context, _children[selectedChildIndex]);
             },
           ),
         ],
@@ -115,6 +166,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               _buildProfileCard(child),
               const SizedBox(height: 24),
               _buildInterestsSection(child),
+              const SizedBox(height: 24),
+              _buildParentNotesSection(context, _children[selectedChildIndex]),
               const SizedBox(height: 24),
               _buildLearningProgressSection(child),
               const SizedBox(height: 24),
@@ -132,9 +185,24 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
         },
         backgroundColor: Theme.of(context).colorScheme.primary,
         icon: const Icon(Icons.add),
-        label: const Text('إضافة طفل'),
+        label: Text(AppStrings.addChild(context)),
       ),
     );
+  }
+
+  String _skillLabel(BuildContext context, String key) {
+    switch (key) {
+      case 'language':
+        return AppStrings.skillLanguage(context);
+      case 'math':
+        return AppStrings.skillMath(context);
+      case 'social':
+        return AppStrings.skillSocial(context);
+      case 'creativity':
+        return AppStrings.skillCreativity(context);
+      default:
+        return key;
+    }
   }
 
   Widget _buildChildSelector() {
@@ -153,6 +221,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               setState(() {
                 selectedChildIndex = index;
               });
+              _parentNotesController.text = child.parentNotes ?? '';
             },
             child: Container(
               width: 80,
@@ -254,7 +323,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '${child['age']} سنوات • ${child['gender']}',
+              '${child['age']} ${AppStrings.yearsUnit(context)} • ${AppStrings.genderLabelFromStored(context, child['gender'].toString())}',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],
@@ -265,21 +334,24 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildStatItem(
+                  context: context,
                   icon: Icons.timer,
                   value: '${child['dailyUsage']}',
-                  label: 'دقيقة/يوم',
+                  label: AppStrings.minutesPerDayStat(context),
                   color: const Color(0xFF87CEEB),
                 ),
                 _buildStatItem(
+                  context: context,
                   icon: Icons.emoji_events,
                   value: '${child['achievements']}',
-                  label: 'إنجاز',
+                  label: AppStrings.achievementStat(context),
                   color: const Color(0xFFFFB74D),
                 ),
                 _buildStatItem(
+                  context: context,
                   icon: Icons.calendar_today,
                   value: '${child['totalDays']}',
-                  label: 'يوم',
+                  label: AppStrings.dayStat(context),
                   color: const Color(0xFF90EE90),
                 ),
               ],
@@ -291,6 +363,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   }
 
   Widget _buildStatItem({
+    required BuildContext context,
     required IconData icon,
     required String value,
     required String label,
@@ -333,9 +406,9 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'الاهتمامات',
-              style: TextStyle(
+            Text(
+              AppStrings.interests(context),
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -345,13 +418,14 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 _showEditInterestsDialog(context, child);
               },
               icon: const Icon(Icons.edit, size: 16),
-              label: const Text('تعديل'),
+              label: Text(AppStrings.edit(context)),
             ),
           ],
         ),
         const SizedBox(height: 12),
         interests.isEmpty
-            ? const Text('لا توجد اهتمامات محددة', style: TextStyle(color: Colors.grey))
+            ? Text(AppStrings.noInterestsSet(context),
+                style: const TextStyle(color: Colors.grey))
             : Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -359,7 +433,10 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   return Chip(
                     backgroundColor:
                         Theme.of(context).colorScheme.secondary.withOpacity(0.15),
-                    label: Text(interest.toString()),
+                    label: Text(
+                      AppStrings.interestDisplayLabel(
+                          context, interest.toString()),
+                    ),
                     avatar: const Icon(
                       Icons.favorite,
                       size: 16,
@@ -372,14 +449,53 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     );
   }
 
+  Widget _buildParentNotesSection(BuildContext context, Child child) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppStrings.parentNotesSectionTitle(context),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppStrings.parentNotesSectionHelper(context),
+          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _parentNotesController,
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: AppStrings.parentNotesHint(context),
+            border: const OutlineInputBorder(),
+            alignLabelWithHint: true,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed:
+                _savingParentNotes ? null : () => _saveParentNotes(child),
+            child: _savingParentNotes
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(AppStrings.parentNotesSave(context)),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildLearningProgressSection(Map<String, dynamic> child) {
     final progress = child['learningProgress'] as Map<String, int>;
-    final skillNames = {
-      'language': 'اللغة',
-      'math': 'الرياضيات',
-      'social': 'المهارات الاجتماعية',
-      'creativity': 'الإبداع',
-    };
     final skillColors = {
       'language': const Color(0xFF87CEEB),
       'math': const Color(0xFFFFB74D),
@@ -390,9 +506,9 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'تقدم التعلم',
-          style: TextStyle(
+        Text(
+          AppStrings.learningProgress(context),
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -412,7 +528,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            skillNames[entry.key] ?? entry.key,
+                            _skillLabel(context, entry.key),
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                           Text(
@@ -451,9 +567,9 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'الإعدادات التربوية',
-          style: TextStyle(
+        Text(
+          AppStrings.educationalSettings(context),
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -471,8 +587,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   ),
                   child: const Icon(Icons.timer, color: Color(0xFF87CEEB)),
                 ),
-                title: const Text('وقت الاستخدام اليومي'),
-                subtitle: const Text('45 دقيقة'),
+                title: Text(AppStrings.dailyUsageTitle(context)),
+                subtitle: Text(AppStrings.dailyUsageSubtitle(context)),
                 trailing: const Icon(Icons.chevron_left),
                 onTap: () {},
               ),
@@ -486,8 +602,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   ),
                   child: const Icon(Icons.content_copy, color: Color(0xFF90EE90)),
                 ),
-                title: const Text('المحتوى المسموح'),
-                subtitle: const Text('قصص، أنشطة، ألعاب تعليمية'),
+                title: Text(AppStrings.allowedContentTitle(context)),
+                subtitle: Text(AppStrings.allowedContentSubtitle(context)),
                 trailing: const Icon(Icons.chevron_left),
                 onTap: () {},
               ),
@@ -501,8 +617,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   ),
                   child: const Icon(Icons.school, color: Color(0xFFFFB74D)),
                 ),
-                title: const Text('المسار التعليمي'),
-                subtitle: const Text('متوازن - تركيز على اللغة'),
+                title: Text(AppStrings.learningPathTitle(context)),
+                subtitle: Text(AppStrings.learningPathSubtitle(context)),
                 trailing: const Icon(Icons.chevron_left),
                 onTap: () {},
               ),
@@ -524,7 +640,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   Navigator.pushNamed(context, '/progress');
                 },
                 icon: const Icon(Icons.assessment),
-                label: const Text('التقارير'),
+                label: Text(AppStrings.reportsButton(context)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   side: BorderSide(color: Theme.of(context).colorScheme.primary),
@@ -538,7 +654,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   Navigator.pushNamed(context, '/library');
                 },
                 icon: const Icon(Icons.library_books),
-                label: const Text('المحتوى'),
+                label: Text(AppStrings.contentButton(context)),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -552,7 +668,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
           child: OutlinedButton.icon(
             onPressed: () => _showDeleteConfirmDialog(context),
             icon: const Icon(Icons.delete, color: Colors.red),
-            label: const Text('حذف ملف الطفل', style: TextStyle(color: Colors.red)),
+            label: Text(AppStrings.deleteChildProfile(context),
+                style: const TextStyle(color: Colors.red)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               side: const BorderSide(color: Colors.red),
@@ -573,7 +690,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
       if (result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم حذف ${childToDelete.name} بنجاح'),
+            content: Text(
+                AppStrings.deleteChildSuccess(context, childToDelete.name)),
             backgroundColor: Colors.green,
           ),
         );
@@ -600,12 +718,13 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text('هل أنت متأكد من حذف ملف "$childName"؟\nلا يمكن التراجع عن هذا الإجراء.'),
+        title: Text(AppStrings.confirmDelete(context)),
+        content:
+            Text(AppStrings.confirmDeleteChildBody(context, childName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(AppStrings.cancel(context)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -613,14 +732,18 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               _deleteChild();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('حذف', style: TextStyle(color: Colors.white)),
+            child: Text(AppStrings.delete(context),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _showEditChildDialog(BuildContext context, Map<String, dynamic> child) {
+  void _showEditChildDialog(BuildContext context, Child currentChild) {
+    final nameController = TextEditingController(text: currentChild.name);
+    final ageController =
+        TextEditingController(text: currentChild.age.toString());
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -647,28 +770,28 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'تعديل بيانات الطفل',
-                style: TextStyle(
+              Text(
+                AppStrings.editChildTitle(context),
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 20),
               TextFormField(
-                initialValue: child['name'],
-                decoration: const InputDecoration(
-                  labelText: 'اسم الطفل',
-                  prefixIcon: Icon(Icons.person),
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: AppStrings.childNameLabel(context),
+                  prefixIcon: const Icon(Icons.person),
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
-                initialValue: child['age'].toString(),
+                controller: ageController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'العمر',
-                  prefixIcon: Icon(Icons.cake),
+                decoration: InputDecoration(
+                  labelText: AppStrings.childAgeLabel(context),
+                  prefixIcon: const Icon(Icons.cake),
                 ),
               ),
               const SizedBox(height: 24),
@@ -677,19 +800,40 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('إلغاء'),
+                      child: Text(AppStrings.cancel(context)),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('تم حفظ التغييرات')),
+                      onPressed: () async {
+                        final name = nameController.text.trim();
+                        final ageParsed =
+                            int.tryParse(ageController.text.trim()) ??
+                                currentChild.age;
+                        final updated = currentChild.copyWith(
+                          name:
+                              name.isEmpty ? currentChild.name : name,
+                          age: ageParsed,
                         );
+                        final result =
+                            await _childService.updateChild(updated);
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        if (result.success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    AppStrings.changesSaved(context))),
+                          );
+                          _loadChildren();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(result.message)),
+                          );
+                        }
                       },
-                      child: const Text('حفظ'),
+                      child: Text(AppStrings.save(context)),
                     ),
                   ),
                 ],
@@ -699,7 +843,10 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
           ),
         );
       },
-    );
+    ).whenComplete(() {
+      nameController.dispose();
+      ageController.dispose();
+    });
   }
 
   void _showEditInterestsDialog(BuildContext context, Map<String, dynamic> child) {
@@ -733,9 +880,9 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'اختر اهتمامات الطفل',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.selectInterestsTitle(context),
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -748,7 +895,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                       final isSelected = selectedInterests.contains(interest);
                       return FilterChip(
                         selected: isSelected,
-                        label: Text(interest),
+                        label: Text(
+                            AppStrings.interestDisplayLabel(context, interest)),
                         onSelected: (selected) {
                           setModalState(() {
                             if (selected) {
@@ -777,7 +925,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text('حفظ'),
+                    child: Text(AppStrings.save(context)),
                   ),
                 ],
               ),
