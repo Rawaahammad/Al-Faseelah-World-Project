@@ -394,10 +394,29 @@ class _HomeContentState extends State<HomeContent> {
               color: const Color(0xFF4DD0E1),
               onTap: () => Navigator.pushNamed(context, '/ai-reports'),
             ),
+            _buildActionCard(context,
+              icon: Icons.dashboard_customize,
+              title: _t(context, 'اختيار البورد', 'Select Board'),
+              subtitle: _t(context, 'البورد المفعّل الآن', 'Active board'),
+              color: const Color(0xFF7986CB),
+              onTap: () => Navigator.pushNamed(context, '/board-selection'),
+            ),
+            _buildActionCard(context,
+              icon: Icons.emoji_events,
+              title: _t(context, 'الإنجازات', 'Achievements'),
+              subtitle: _t(context, 'ماذا أنجز طفلك', "Child's progress"),
+              color: const Color(0xFFFF8A65),
+              onTap: () => Navigator.pushNamed(context, '/achievements'),
+            ),
           ],
         ),
       ],
     );
+  }
+
+  // ترجمة سريعة عربي/إنجليزي حسب لغة التطبيق
+  String _t(BuildContext context, String ar, String en) {
+    return Localizations.localeOf(context).languageCode == 'en' ? en : ar;
   }
 
   Widget _buildActionCard(BuildContext context, {

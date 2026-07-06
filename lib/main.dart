@@ -25,6 +25,8 @@ import 'screens/parental_controls_screen.dart';
 import 'screens/ai_reports_screen.dart';
 import 'screens/child_activity_detail_screen.dart';
 import 'screens/behavior_goals_screen.dart';
+import 'screens/board_selection_screen.dart';
+import 'screens/achievements_screen.dart';
 
 const String supabaseUrl =
     'https://nrtqvyhyjpgxhfdpycxm.supabase.co';
@@ -101,6 +103,8 @@ class AlFaseelahParentApp extends StatelessWidget {
             '/ai-reports': (context) => const AIReportsScreen(),
             '/activity-detail': (context) => const ChildActivityDetailScreen(),
             '/behavior-goals': (context) => const BehaviorGoalsScreen(),
+            '/board-selection': (context) => const BoardSelectionScreen(),
+            '/achievements': (context) => const AchievementsScreen(),
           },
         );
       },
