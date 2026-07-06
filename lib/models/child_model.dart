@@ -10,6 +10,9 @@ class Child {
   final String? parentId;
   /// Parent-written focus areas / suggestions; persisted in Supabase `parent_notes`.
   final String? parentNotes;
+  /// معرّف قطعة الـ RFID الخاصة بالطفل؛ تُستخدم من الراسبيري باي للتعرف على الطفل.
+  /// يُخزَّن بعمود `rfid_id` بجدول `children` على Supabase.
+  final String? rfidId;
 
   Child({
     required this.id,
@@ -21,6 +24,7 @@ class Child {
     required this.createdAt,
     this.parentId,
     this.parentNotes,
+    this.rfidId,
   });
 
   static DateTime _parseCreatedAt(dynamic raw) {
@@ -42,6 +46,7 @@ class Child {
       createdAt: _parseCreatedAt(json['createdAt']),
       parentId: json['parentId'] as String?,
       parentNotes: json['parentNotes'] as String?,
+      rfidId: json['rfidId'] as String?,
     );
   }
 
@@ -56,6 +61,7 @@ class Child {
       'createdAt': createdAt.toIso8601String(),
       'parentId': parentId,
       'parentNotes': parentNotes,
+      'rfidId': rfidId,
     };
   }
 
@@ -71,6 +77,8 @@ class Child {
     String? parentId,
     String? parentNotes,
     bool clearParentNotes = false,
+    String? rfidId,
+    bool clearRfidId = false,
   }) {
     return Child(
       id: id ?? this.id,
@@ -83,6 +91,7 @@ class Child {
       parentId: parentId ?? this.parentId,
       parentNotes:
           clearParentNotes ? null : (parentNotes ?? this.parentNotes),
+      rfidId: clearRfidId ? null : (rfidId ?? this.rfidId),
     );
   }
 }

@@ -88,6 +88,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
       'age': child.age,
       'avatar': child.avatar,
       'gender': child.gender,
+      'rfidId': child.rfidId,
       'interests': child.interests,
       'learningProgress': {
         'language': 50,
@@ -327,6 +328,42 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFBA68C8).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.nfc, size: 16, color: Color(0xFFBA68C8)),
+                  const SizedBox(width: 6),
+                  Text(
+                    AppStrings.rfidSectionTitle(context),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFBA68C8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    (child['rfidId'] as String?)?.isNotEmpty == true
+                        ? child['rfidId']
+                        : AppStrings.rfidNotAssigned(context),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: (child['rfidId'] as String?)?.isNotEmpty == true
+                          ? const Color(0xFFBA68C8)
+                          : Colors.grey[500],
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -744,6 +781,8 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     final nameController = TextEditingController(text: currentChild.name);
     final ageController =
         TextEditingController(text: currentChild.age.toString());
+    final rfidController =
+        TextEditingController(text: currentChild.rfidId ?? '');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -794,6 +833,18 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   prefixIcon: const Icon(Icons.cake),
                 ),
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: rfidController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: AppStrings.rfidLabel(context),
+                  hintText: AppStrings.rfidHint(context),
+                  prefixIcon: const Icon(Icons.nfc),
+                  helperText: AppStrings.rfidHelperText(context),
+                  helperMaxLines: 2,
+                ),
+              ),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -811,10 +862,13 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                         final ageParsed =
                             int.tryParse(ageController.text.trim()) ??
                                 currentChild.age;
+                        final rfidText = rfidController.text.trim();
                         final updated = currentChild.copyWith(
                           name:
                               name.isEmpty ? currentChild.name : name,
                           age: ageParsed,
+                          rfidId: rfidText.isEmpty ? null : rfidText,
+                          clearRfidId: rfidText.isEmpty,
                         );
                         final result =
                             await _childService.updateChild(updated);
@@ -846,6 +900,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     ).whenComplete(() {
       nameController.dispose();
       ageController.dispose();
+      rfidController.dispose();
     });
   }
 
@@ -853,7 +908,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     final allInterests = [
       'قصص الحيوانات',
       'الألوان',
-      'الموسيقى',
+      'القرآن',
       'الأرقام',
       'الحروف',
       'الفضاء',

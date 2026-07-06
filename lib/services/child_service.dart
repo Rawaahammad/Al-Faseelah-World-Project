@@ -60,6 +60,27 @@ class ChildService {
     }
   }
 
+  /// الحصول على طفل بواسطة معرّف قطعة الـ RFID الخاصة به
+  Future<Child?> getChildByRfid(String rfidId) async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return null;
+
+      final row = await _client
+          .from('children')
+          .select()
+          .eq('rfid_id', rfidId)
+          .eq('parent_id', user.id)
+          .maybeSingle();
+
+      if (row == null) return null;
+      return _childFromSupabaseRow(row as Map<String, dynamic>);
+    } catch (e) {
+      print('[ChildService] getChildByRfid error: $e');
+      return null;
+    }
+  }
+
   /// إضافة طفل جديد
   Future<ServiceResult> addChild(Child child) async {
     try {
@@ -185,6 +206,7 @@ class ChildService {
       createdAt: createdAt,
       parentId: row['parent_id'] as String?,
       parentNotes: row['parent_notes'] as String?,
+      rfidId: row['rfid_id'] as String?,
     );
   }
 
@@ -198,6 +220,7 @@ class ChildService {
       'created_at': child.createdAt.toIso8601String(),
       'parent_id': parentId,
       'parent_notes': child.parentNotes,
+      'rfid_id': child.rfidId,
     };
   }
 

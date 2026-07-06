@@ -409,6 +409,25 @@ class AppStrings {
   static String childAgeLabel(BuildContext context) =>
       _t(context, 'العمر', 'Age');
 
+  static String rfidLabel(BuildContext context) =>
+      _t(context, 'رقم قطعة RFID', 'RFID Tag ID');
+
+  static String rfidHint(BuildContext context) =>
+      _t(context, 'مثال: A1B2C3D4', 'e.g. A1B2C3D4');
+
+  static String rfidHelperText(BuildContext context) =>
+      _t(
+        context,
+        'الرقم المكتوب على قطعة الـ RFID الخاصة بالطفل، عشان الراسبيري باي يتعرف عليه تلقائياً',
+        'The ID printed on the child\'s RFID tag, so the Raspberry Pi can recognize them automatically',
+      );
+
+  static String rfidSectionTitle(BuildContext context) =>
+      _t(context, 'قطعة الـ RFID', 'RFID Tag');
+
+  static String rfidNotAssigned(BuildContext context) =>
+      _t(context, 'لم يتم تعيين قطعة بعد', 'No tag assigned yet');
+
   static String save(BuildContext context) => _t(context, 'حفظ', 'Save');
 
   static String changesSaved(BuildContext context) =>
@@ -845,13 +864,15 @@ class AppStrings {
         'الحيوانات',
         'الطبيعة',
         'الفضاء',
-        'الموسيقى',
+        'القرآن',
         'الرسم',
         'الفن',
         'الرياضة',
         'العلوم',
         'الطبخ',
       ];
+
+
 
   /// Safe display for stored interest strings (Arabic canonical, legacy English, or custom).
   static String interestDisplayLabel(BuildContext context, String raw) {
@@ -882,9 +903,9 @@ class AppStrings {
       case 'الفضاء':
       case 'Space':
         return _t(context, 'الفضاء', 'Space');
-      case 'الموسيقى':
-      case 'Music':
-        return _t(context, 'الموسيقى', 'Music');
+      case 'القرآن':
+      case 'Quran':
+        return _t(context, 'القرآن', 'Quran');
       case 'الرسم':
       case 'Drawing':
         return _t(context, 'الرسم', 'Drawing');

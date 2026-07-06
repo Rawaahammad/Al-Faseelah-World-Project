@@ -13,6 +13,7 @@ class AddChildScreen extends StatefulWidget {
 class _AddChildScreenState extends State<AddChildScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _rfidController = TextEditingController();
   final _childService = ChildService();
 
   int _selectedAge = 5;
@@ -31,7 +32,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     {'name': 'الحيوانات', 'icon': Icons.pets},
     {'name': 'الطبيعة', 'icon': Icons.park},
     {'name': 'الفضاء', 'icon': Icons.rocket},
-    {'name': 'الموسيقى', 'icon': Icons.music_note},
+    {'name': 'القرآن', 'icon': Icons.menu_book},
     {'name': 'الرسم', 'icon': Icons.brush},
     {'name': 'الرياضة', 'icon': Icons.sports_soccer},
     {'name': 'العلوم', 'icon': Icons.science},
@@ -41,6 +42,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _rfidController.dispose();
     super.dispose();
   }
 
@@ -60,6 +62,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
         _isLoading = true;
       });
 
+      final rfidText = _rfidController.text.trim();
+
       final newChild = Child(
         id: '',
         name: _nameController.text,
@@ -68,6 +72,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         avatar: _selectedAvatar,
         interests: _selectedInterests,
         createdAt: DateTime.now(),
+        rfidId: rfidText.isEmpty ? null : rfidText,
       );
 
       final result = await _childService.addChild(newChild);
@@ -114,6 +119,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
               _buildAvatarSection(),
               const SizedBox(height: 32),
               _buildNameSection(),
+              const SizedBox(height: 24),
+              _buildRfidSection(),
               const SizedBox(height: 24),
               _buildAgeSection(),
               const SizedBox(height: 24),
@@ -227,6 +234,38 @@ class _AddChildScreenState extends State<AddChildScreen> {
             }
             return null;
           },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRfidSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.nfc, color: Color(0xFFBA68C8), size: 20),
+            const SizedBox(width: 8),
+            Text(
+              AppStrings.rfidLabel(context),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _rfidController,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(
+            hintText: AppStrings.rfidHint(context),
+            prefixIcon: const Icon(Icons.nfc),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          AppStrings.rfidHelperText(context),
+          style: TextStyle(color: Colors.grey[500], fontSize: 12),
         ),
       ],
     );
