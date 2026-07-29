@@ -1,0 +1,45 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# Generated images and cache
+images_cache/
+images_cache2/
+.cache/
+
+# Audio generated during execution
+*.mp3
+*.wav
+
+# AI models and checkpoints
+vosk-model*/
+whisper_models/
+*.pt
+*.pth
+
+# Backups and temporary files
+*.bak
+*.bak*
+*.save
+*.tmp
+*.log
+
+# Operating system
+.DS_Store
+Thumbs.db
