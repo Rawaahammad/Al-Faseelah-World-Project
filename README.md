@@ -162,8 +162,8 @@ This repository is shared for portfolio and academic review purposes. No part of
 
 For questions, permissions, or collaboration inquiries, feel free to reach out:
 
-- **Rawaa Hammad** — *[add email / LinkedIn]*
-- **Fatima Azazmah** — *[add email / LinkedIn]*
+- **Rawaa Hammad** — *rawaahammad3@gmail.com*
+- **Fatima Azazmah** — *fatmaazazmah@gmail.com*
 
 ---
 
