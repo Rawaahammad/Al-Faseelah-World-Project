@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="26442745-c10e-4656-a8b9-913b48482052" name="Changes" comment="Add Hardware Layer">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="26442745-c10e-4656-a8b9-913b48482052" name="Changes" comment="Add project Files" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -105,13 +103,30 @@
       <option name="project" value="LOCAL" />
       <updated>1785393641258</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Add project Files">
+      <option name="closed" value="true" />
+      <created>1785395710458</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1785395710458</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Add project Files">
+      <option name="closed" value="true" />
+      <created>1785395717700</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1785395717700</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Reorganize repository structure" />
     <MESSAGE value="Add AI module" />
     <MESSAGE value="Add Hardware Layer" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add Hardware Layer" />
+    <MESSAGE value="Add project Files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add project Files" />
   </component>
 </project>
