@@ -110,7 +110,7 @@ The parent's window in. A **Flutter** app called **Pearant**, with RFID-based ch
 <img src="Application/app-Images/achievement-1.jpg" width="200"/> <img src="Application/app-Images/progress-1.jpg" width="200"/> <img src="Application/app-Images/recent-activities.jpeg" width="200"/>
 
 ### Reports & Settings
-<img src="Application/app-Images/reports-1.jpg" width="200"/> <img src="Application/app-Images/reports-2.jpg" width="200"/> <img src="Application/app-Images/settings-1.jpg" width="200"/>
+ <img src="Application/app-Images/reports-2.jpg" width="200"/> <img src="Application/app-Images/settings-1.jpg" width="200"/>
 
 </div>
 
