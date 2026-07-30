@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/logo.svg" alt="Alfaseelah Logo" width="200"/>
+<img src="assets/al_faseelah_world_cover.png" alt="Al-Faseelah World Cover" width="600"/>
 
-# 🌱 Alfaseelah | الفسيلة
+# 🌱 Al-Faseelah World | عالم الفسيلة
 
 ### An AI-Powered Interactive Educational Toy for Children
 
@@ -16,7 +16,7 @@
 
 <br/>
 
-**[Explore the Hardware](./Hardware) · [Explore the AI Engine](./AI) · [Explore the App](./Application) · [Documentation](./Documentation)**
+**[Hardware](./Hardware) · [AI Engine](./AI) · [Pearant App](./Application) · [Documentation](./Documentation)**
 
 </div>
 
@@ -24,9 +24,9 @@
 
 ## 📖 About the Project
 
-**Alfaseelah** (الفسيلة — "the sapling") is a graduation project reimagining the educational toy: a physical, tactile play set that *listens, understands, and responds*. A child places a piece on a themed board — **school**, **home**, **mosque**, or **zoo/careers** — and Alfaseelah recognizes it, speaks about it in character, and reacts with a matching facial expression, all within a few seconds.
+**Al-Faseelah World** (عالم الفسيلة) is a graduation project reimagining the educational toy: a physical, tactile play set that *listens, understands, and responds*. A child places a piece on a themed board — **school**, **home**, **mosque**, or **zoo/careers** — and the toy recognizes it, speaks about it in character through its green sprout companion, and reacts with a matching facial expression, all within a few seconds.
 
-Meanwhile, a companion mobile app — **Pearant** — lets parents follow along: which child is playing, what they've learned, and what they've achieved.
+Meanwhile, the **Pearant** companion mobile app lets parents follow along: which child is playing, what they've learned, and what they've achieved.
 
 > Built as a graduation project for the Electrical and Computer Engineering Department, Birzeit University.
 
@@ -66,8 +66,12 @@ Meanwhile, a companion mobile app — **Pearant** — lets parents follow along:
 ### 1️⃣ Hardware Layer — [`/Hardware`](./Hardware)
 The physical foundation. A grid of reed switch sensors wired zone-by-zone (school, home, mosque, and a shared zoo/careers board) into a Raspberry Pi 5's GPIO pins, with dynamic dual-zone mapping so the same pins can serve two boards.
 
+<div align="center">
+<img src="assets/toy_photo.jpg" alt="Al-Faseelah physical toy board" width="480"/>
+</div>
+
 ### 2️⃣ AI Engine Layer — [`/AI`](./AI)
-The brain and voice. A **Persona Module** shapes how Alfaseelah "speaks," a **Content Manager** pulls the right content for each piece, and a full voice pipeline — **Whisper** for speech-to-text and **Gemini** for response generation — completes a full interaction cycle in roughly **2–3.5 seconds**, paired with **Pygame**-rendered facial expressions.
+The brain and voice. A **Persona Module** shapes how the toy "speaks," a **Content Manager** pulls the right content for each piece, and a full voice pipeline — **Whisper** for speech-to-text and **Gemini** for response generation — completes a full interaction cycle in roughly **2–3.5 seconds**, paired with **Pygame**-rendered facial expressions.
 
 ### 3️⃣ Application Layer — [`/Application`](./Application)
 The parent's window in. A **Flutter** app called **Pearant**, with RFID-based child identification, a live content library, an achievements screen, per-child preferences, and RLS-secured saved content — all synced through a shared **Supabase** backend.
@@ -88,17 +92,26 @@ The parent's window in. A **Flutter** app called **Pearant**, with RFID-based ch
 
 ---
 
-## 🖼️ Gallery
+## 📱 App Preview — Pearant
 
 <div align="center">
 
-| Hardware Setup | AI in Action | Pearant App |
-|:---:|:---:|:---:|
-| *add photo here* | *add photo/gif here* | *add screenshot here* |
+### Onboarding & Child Profiles
+<img src="Application/app-Images/aims.jpg" width="200"/> <img src="Application/app-Images/child-profile1.jpg" width="200"/> <img src="Application/app-Images/child-profile2.jpg" width="200"/> <img src="Application/app-Images/child-profile3.jpg" width="200"/>
+
+### Home & Board Selection
+<img src="Application/app-Images/home.jpeg" width="200"/> <img src="Application/app-Images/board-selection.jpg" width="200"/>
+
+### Content Library
+<img src="Application/app-Images/content-1.jpg" width="200"/> <img src="Application/app-Images/content-2.jpg" width="200"/> <img src="Application/app-Images/content-3.jpg" width="200"/> <img src="Application/app-Images/content-4.jpg" width="200"/>
+
+### Achievements & Progress
+<img src="Application/app-Images/achievement-1.jpg" width="200"/> <img src="Application/app-Images/progress-1.jpg" width="200"/> <img src="Application/app-Images/recent-activities.jpeg" width="200"/>
+
+### Reports & Settings
+<img src="Application/app-Images/reports-1.jpg" width="200"/> <img src="Application/app-Images/reports-2.jpg" width="200"/> <img src="Application/app-Images/settings-1.jpg" width="200"/>
 
 </div>
-
-> 📌 Add your real photos/screenshots to `assets/` and swap the placeholders above — this section is what makes the repo feel alive, so don't skip it.
 
 ---
 
@@ -115,8 +128,9 @@ Al-Faseelah-World-Project/
 ├── Hardware/         # Sensors, GPIO mapping, wiring
 ├── AI/                # Persona, content manager, voice pipeline
 ├── Application/       # Pearant — Flutter parent app
+│   └── app-Images/     # App screenshots used in this README
 ├── Documentation/      # Report, diagrams, design docs
-├── assets/             # Logo, images, media
+├── assets/             # Cover, logo, toy photos
 └── README.md
 ```
 
@@ -140,6 +154,6 @@ Al-Faseelah-World-Project/
 
 <div align="center">
 
-*Made with 🌱 by the Alfaseelah team*
+*Made with 🌱 by the Al-Faseelah World team*
 
 </div>
