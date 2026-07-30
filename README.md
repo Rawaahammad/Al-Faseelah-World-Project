@@ -104,7 +104,7 @@ The parent's window in. A **Flutter** app called **Pearant**, with RFID-based ch
 <img src="Application/app-Images/home.jpeg" width="200"/> <img src="Application/app-Images/board-selection.jpg" width="200"/>
 
 ### Content Library
-<img src="Application/app-Images/content-1.jpg" width="200"/> <img src="Application/app-Images/content-2.jpg" width="200"/> <img src="Application/app-Images/content-3.jpg" width="200"/> <img src="Application/app-Images/content-4.jpg" width="200"/>
+<img src="Application/app-Images/content-4.jpg" width="200"/>
 
 ### Achievements & Progress
 <img src="Application/app-Images/achievement-1.jpg" width="200"/> <img src="Application/app-Images/progress-1.jpg" width="200"/> <img src="Application/app-Images/recent-activities.jpeg" width="200"/>
