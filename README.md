@@ -98,7 +98,7 @@ The parent's window in. A **Flutter** app called **Pearant**, with RFID-based ch
 <div align="center">
 
 ### Onboarding & Child Profiles
-<img src="Application/app-Images/aims.jpg" width="200"/> <img src="Application/app-Images/child-profile1.jpg" width="200"/> <img src="Application/app-Images/child-profile2.jpg" width="200"/> <img src="Application/app-Images/child-profile3.jpg" width="200"/>
+<img src="Application/app-Images/aims.jpg" width="200"/> <img src="Application/app-Images/child-profile2.jpg" width="200"/> <img src="Application/app-Images/child-profile3.jpg" width="200"/>
 
 ### Home & Board Selection
 <img src="Application/app-Images/home.jpeg" width="200"/> <img src="Application/app-Images/board-selection.jpg" width="200"/>
