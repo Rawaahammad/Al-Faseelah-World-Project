@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="26442745-c10e-4656-a8b9-913b48482052" name="Changes" comment="Add AI module">
+    <list default="true" id="26442745-c10e-4656-a8b9-913b48482052" name="Changes" comment="Add Hardware Layer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -24,12 +24,12 @@
     &quot;assignee&quot;: &quot;Rawaahammad&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Rawaahammad/GP_Al-Faseelah-Parent-App&quot;,
-    &quot;accountId&quot;: &quot;8c665c80-45a1-416f-89cc-100449274355&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Rawaahammad/Al-Faseelah-World-Project.git",
+    "accountId": "8c665c80-45a1-416f-89cc-100449274355"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 6
@@ -89,12 +89,29 @@
       <option name="project" value="LOCAL" />
       <updated>1785364716756</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Add Hardware Layer">
+      <option name="closed" value="true" />
+      <created>1785393582324</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1785393582324</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Add Hardware Layer">
+      <option name="closed" value="true" />
+      <created>1785393641258</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1785393641258</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Reorganize repository structure" />
     <MESSAGE value="Add AI module" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add AI module" />
+    <MESSAGE value="Add Hardware Layer" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add Hardware Layer" />
   </component>
 </project>
