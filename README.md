@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/al_faseelah_world_cover.png" alt="Al-Faseelah World Cover" width="500"/>
+<img src="assets/al_faseelah_world_cover.png" alt="Al-Faseelah World Cover" width="600"/>
 
 # 🌱 Al-Faseelah World | عالم الفسيلة
 
@@ -13,6 +13,7 @@
 [![AI Engine](https://img.shields.io/badge/AI-Gemini%20%2B%20Whisper-4285F4?logo=googlegemini&logoColor=white)](./AI)
 [![Backend](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase&logoColor=white)](#-system-architecture)
 [![Status](https://img.shields.io/badge/Status-Graduation%20Project-2E7D5B)]()
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-lightgrey)](./LICENSE)
 
 <br/>
 
@@ -136,19 +137,33 @@ Al-Faseelah-World-Project/
 
 ---
 
-## 👥 Team
+## 👥 About Us
 
-<div align="center">
+This project was built by **Rawaa Hammad** and **Fatima Azazmah**, under the supervision of **Dr. Hanna Balata**.
 
-| Photo | Name | Role |
-|:---:|:---:|:---:|
-| 🧑‍💻 | **Rawaa** | *[role — e.g. AI & Hardware Integration]* |
-| 🧑‍💻 | *[teammate name]* | *[role]* |
-| 🧑‍🏫 | *[supervisor name]* | *Project Supervisor* |
+It's our graduation project — Section 47, Electrical and Computer Engineering Department, Faculty of Engineering and Technology, Birzeit University (July 2026) — submitted in fulfillment of the requirements for the B.Sc. in Computer Engineering.
 
-</div>
+We designed and built Al-Faseelah World end to end: the **hardware** (sensor grid and GPIO wiring on a Raspberry Pi 5), the **AI engine** (persona design, content management, and the Whisper + Gemini voice pipeline), and the **Pearant** Flutter app with its Supabase backend — combining embedded systems, conversational AI, and mobile development into one child-safe learning experience.
 
-> Electrical and Computer Engineering Department, Birzeit University
+---
+
+## 📜 License
+
+© 2026 Rawaa Hammad & Fatima Azazmah. All Rights Reserved.
+
+This repository is shared for portfolio and academic review purposes. No part of the code, designs, or content may be copied, modified, or reused without prior written permission from the authors. See [`LICENSE`](./LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+- **Dr. Hanna Balata** — project supervisor
+- The **Electrical and Computer Engineering Department**, Faculty of Engineering and Technology, Birzeit University
+
+## 📬 Contact
+
+For questions, permissions, or collaboration inquiries, feel free to reach out:
+
+- **Rawaa Hammad** — *[add email / LinkedIn]*
+- **Fatima Azazmah** — *[add email / LinkedIn]*
 
 ---
 
