@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/al_faseelah_world_cover.png" alt="Al-Faseelah World Cover" width="600"/>
+<img src="assets/al_faseelah_world_cover.png" alt="Al-Faseelah World Cover" width="500"/>
 
 # 🌱 Al-Faseelah World | عالم الفسيلة
 
